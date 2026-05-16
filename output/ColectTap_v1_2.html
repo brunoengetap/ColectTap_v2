@@ -860,13 +860,14 @@ function selectTipoEquip(tipo) {
 // T5 — FORMULÁRIO POR SEÇÕES
 // ═══════════════════════════════════════════════════════════════
 const SECS = [
-  { id:'ident',     label:'A — Identificação',        icon:'🏷️',  pct:14  },
-  { id:'projeto',   label:'B — Dados de Projeto',     icon:'📐',  pct:28  },
-  { id:'dimensoes', label:'C — Dimensões',            icon:'📏',  pct:42  },
-  { id:'disp',      label:'D — Dispositivos de Seg.', icon:'🔒',  pct:57  },
-  { id:'docs',      label:'E — Documentação',         icon:'📁',  pct:71  },
-  { id:'servico',   label:'F — Condições de Serviço', icon:'⚠️',  pct:85  },
-  { id:'obs',       label:'G — Observações e Foto',   icon:'📷',  pct:100 },
+  { id:'ident',         label:'A — Identificação',        icon:'🏷️',  pct:13  },
+  { id:'projeto',       label:'B — Dados de Projeto',     icon:'📐',  pct:25  },
+  { id:'dimensoes',     label:'C — Dimensões',            icon:'📏',  pct:38  },
+  { id:'disp',          label:'D — Dispositivos de Seg.', icon:'🔒',  pct:50  },
+  { id:'docs',          label:'E — Documentação',         icon:'📁',  pct:63  },
+  { id:'servico',       label:'F — Condições de Serviço', icon:'⚠️',  pct:75  },
+  { id:'enquadramento', label:'Enquadramento NR13',       icon:'⚖️',  pct:88  },
+  { id:'obs',           label:'G — Observações e Foto',   icon:'📷',  pct:100 },
 ];
 
 function renderT5() {
@@ -917,6 +918,7 @@ function renderSecao(id) {
     case 'disp': return renderDispositivos(t);
     case 'docs': return renderDocumentacao(t);
     case 'servico': return renderServico(t);
+    case 'enquadramento': return renderEnquadramento(t);
     case 'obs': return renderObs(t);
     default: return '';
   }
@@ -983,7 +985,7 @@ function renderIdentificacao(t) {
     tubulacao:[{v:'I',l:'Classe I'},{v:'II',l:'Classe II'},{v:'III',l:'Classe III'}],
     tanque:  [{v:'I',l:'Categoria I'},{v:'II',l:'Categoria II'},{v:'III',l:'Categoria III'}],
   }[t] || [];
-  return `
+  const html = `
     ${campo('tag','TAG / Código de Identificação','text',{placeholder:'VP-01, CL-01, TUB-01…'})}
     ${campo('fabricante','Fabricante','text',{placeholder:'Nome do fabricante'})}
     ${campo('numero_equip','Número do Equipamento (Fabricante)','text',{placeholder:'Nº dado pelo fabricante'})}
@@ -996,6 +998,8 @@ function renderIdentificacao(t) {
     ${toggle('placa_indelevel','Possui placa de identificação indelével?')}
     ${toggle('necessita_tag','Necessita identificação de TAG/Categoria?')}
     ${campo('obs_ident','Observações sobre identificação','textarea',{placeholder:'Placa ilegível, tag ausente…'})}`;
+  const fotosSecao = getFotosSecao('ident', t);
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
 }
 
 // ── SEÇÃO B: PROJETO ──
@@ -1007,7 +1011,7 @@ function renderProjeto(t) {
     {v:'C',l:'Classe C — Não inflamável / Não tóxico'},
     {v:'D',l:'Classe D — Vapor d\'água / Água quente'},
   ];
-  return `
+  const html = `
     <div class="field-row2">
       ${campo('pmta','PMTA (kgf/cm²)','number',{placeholder:'Pressão máx. trab. admissível'})}
       ${campo('pressao_trabalho','Pressão de Trabalho (kgf/cm²)','number',{placeholder:'Pressão operacional'})}
@@ -1024,11 +1028,14 @@ function renderProjeto(t) {
       ${campo('tipo_ultima_inspecao','Tipo da Últ. Inspeção','select',{options:['Interna','Externa','Interna + Externa','Não inspecionado']})}
     </div>
     ${toggle('ja_inspecionado','Já foi inspecionado anteriormente?')}`;
+  const fotosSecao = getFotosSecao('projeto', t);
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
 }
 
 // ── SEÇÃO C: DIMENSÕES ──
 function renderDimensoes(t) {
-  if (t === 'vaso') return `
+  let html = '';
+  if (t === 'vaso') html = `
     <div class="warn-box">Preencha as dimensões conforme placa ou prontuário do equipamento.</div>
     <div class="field-row2">
       ${campo('diametro','Diâmetro Interno (mm)','number',{placeholder:'Ex: 600'})}
@@ -1037,7 +1044,7 @@ function renderDimensoes(t) {
     ${campo('volume','Volume (litros)','number',{placeholder:'Ex: 500'})}
     ${campo('espessura_parede','Espessura de Parede (mm)','number',{placeholder:'Ex: 10'})}
     ${campo('material_casco','Material do Casco','text',{placeholder:'Ex: Aço carbono ASTM A516 Gr.70'})}`;
-  if (t === 'caldeira') return `
+  if (t === 'caldeira') html = `
     <div class="field-row2">
       ${campo('capacidade_vapor','Capacidade de Produção (kg/h)','number',{placeholder:'Ex: 500'})}
       ${campo('area_aquecimento','Área de Superfície de Aquecimento (m²)','number',{placeholder:'Ex: 40'})}
@@ -1045,7 +1052,7 @@ function renderDimensoes(t) {
     ${campo('combustivel','Combustível','select',{options:['GLP','GN (gás natural)','Óleo BPF','Lenha/Biomassa','Elétrico','Outro']})}
     ${campo('pressao_projeto','Pressão de Projeto (kgf/cm²)','number',{placeholder:'Ex: 12'})}
     ${campo('material_casco','Material do Casco','text',{placeholder:'Ex: Aço carbono'})}`;
-  if (t === 'tubulacao') return `
+  if (t === 'tubulacao') html = `
     ${campo('bitola','Bitola Nominal','select',{options:['1/2"','3/4"','1"','1.1/4"','1.1/2"','2"','2.1/2"','3"','4"','6"','8"','10"','12"','Outro']})}
     ${campo('bitola_outro','Bitola (manual)','text',{placeholder:'Se não listada acima'})}
     <div class="field-row2">
@@ -1055,7 +1062,7 @@ function renderDimensoes(t) {
     ${campo('material','Material','select',{options:['Aço carbono API 5L','Aço inox 304','Aço inox 316','Cobre','Latão','CPVC','Outro']})}
     ${campo('classe_pressao','Classe de Pressão (ANSI/ASME)','select',{options:['150#','300#','600#','900#','1500#','2500#','N/A']})}
     ${campo('isolamento','Isolamento Térmico','select',{options:['Sim — bom estado','Sim — deteriorado','Não possui','N/A']})}`;
-  if (t === 'tanque') return `
+  if (t === 'tanque') html = `
     <div class="field-row2">
       ${campo('diametro','Diâmetro (m)','number',{placeholder:'Ex: 4,5'})}
       ${campo('altura','Altura (m)','number',{placeholder:'Ex: 6'})}
@@ -1064,12 +1071,14 @@ function renderDimensoes(t) {
     ${campo('teto','Tipo de Teto','select',{options:['Fixo cônico','Fixo abaulado','Flutuante externo','Flutuante interno','Aberto (sem teto)','Outro']})}
     ${campo('material','Material','select',{options:['Aço carbono','Aço inox 304','Aço inox 316','Fibra de vidro (GRP)','Outro']})}
     ${campo('revestimento','Revestimento / Pintura','select',{options:['Epóxi interno','Borracha (borrachamento)','Sem revestimento','Deteriorado','Outro']})}`;
-  return '<div class="info-box">Nenhuma dimensão específica para este tipo.</div>';
+  if (!html) html = '<div class="info-box">Nenhuma dimensão específica para este tipo.</div>';
+  const fotosSecao = getFotosSecao('dimensoes', t);
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
 }
 
 // ── SEÇÃO D: DISPOSITIVOS DE SEGURANÇA ──
 function renderDispositivos(t) {
-  return `
+  const html = `
     <p class="sec-label">Manômetro</p>
     ${toggle('possui_manometro','Possui manômetro?',['Sim','Não'])}
     ${toggle('manometro_calibrado','Manômetro calibrado?',['Sim','Não','N/A'])}
@@ -1089,10 +1098,12 @@ function renderDispositivos(t) {
     ${toggle('possui_valvula_retencao','Possui válvula de retenção?',['Sim','Não','N/A'])}
     ${t==='caldeira' ? toggle('possui_indicador_nivel','Possui indicador de nível?',['Sim','Não']) : ''}
     ${t==='caldeira' ? toggle('possui_pressostato','Possui pressostato de segurança?',['Sim','Não']) : ''}`;
+  const fotosSecao = getFotosSecao('disp', t);
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
 }
 
 // ── SEÇÃO E: DOCUMENTAÇÃO ──
-function renderDocumentacao(t) {
+function renderDocumentacaoInteligente(t) {
   const docsTipo = {
     vaso:['Prontuário do vaso (fabricante)','Registro de segurança','Relatórios de inspeção anteriores','Projeto de Alteração e Reparo (PAR)','Certificado de calibração PSV','Certificado de calibração manômetro','Projeto de instalação'],
     caldeira:['Prontuário da caldeira (fabricante)','Registro de segurança','Relatórios de inspeção anteriores','Projeto de Alteração e Reparo (PAR)','Certificado de calibração PSV','Certificado de calibração manômetro','Projeto de instalação','Licença de operação'],
@@ -1100,16 +1111,32 @@ function renderDocumentacao(t) {
     tanque:['Folhas de dados','Registro de segurança','Relatórios de inspeção anteriores','Projeto de Alteração e Reparo (PAR)','Certificados de inspeção e testes'],
   };
   const docs = docsTipo[t] || docsTipo.vaso;
-  return `
-    <div class="info-box">Marque os documentos presentes na empresa no momento do levantamento.</div>
-    ${checkList('doc', 'Documentos presentes', docs)}
-    ${campo('obs_docs','Observações sobre documentação','textarea',{placeholder:'Prontuário incompleto, RS desatualizado…'})}`;
+  const statusOpts = ['Sim, completa','Sim, parcial','Não localizada','Documentação extraviada','Não se aplica','Aguardando envio'];
+  const status = SES.dados.status_documentacao || '';
+  let html = `
+    ${toggle('status_documentacao','Existe documentação disponível?',statusOpts)}
+    <div class="info-box">Marque os documentos presentes na empresa no momento do levantamento.</div>`;
+  if (status === 'Sim, completa' || status === 'Sim, parcial') {
+    html += `
+      ${checkList('doc', 'Documentos presentes', docs)}
+      ${campo('obs_docs','Observações sobre documentação','textarea',{placeholder:'Prontuário incompleto, RS desatualizado…'})}
+      ${campo('responsavel_envio_docs','Responsável pelo envio de documentos','text',{placeholder:'Nome e contato'})}
+      ${campo('prazo_envio_docs','Prazo para envio','date',{})}`;
+  } else {
+    html += `
+      ${campo('obs_docs','Observações sobre documentação','textarea',{placeholder:'Descreva o status e a pendência documental.'})}
+      <div class="warn-box">Pendência automática registrada: documentação não disponível no momento do levantamento.</div>`;
+    if (!SES.dados.documentos_ausentes) SES.dados.documentos_ausentes = docs;
+  }
+  const fotosSecao = getFotosSecao('docs', t);
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
 }
+const renderDocumentacao = renderDocumentacaoInteligente;
 
 // ── SEÇÃO F: CONDIÇÕES DE SERVIÇO ──
 function renderServico(t) {
   const ends = ['Líquido Penetrante (LP)','Ultrassom (UT)','Partículas Magnéticas (PM)','Radiografia (RT)','TOFD','Phased Array (PA)','Hardness Test'];
-  return `
+  const html = `
     ${toggle('trabalho_altura','Requer trabalho em altura para inspeção?',['Sim','Não'])}
     ${toggle('necessita_th','Necessita Teste Hidrostático?',['Sim','Não','Já realizado'])}
     ${toggle('espaco_confinado','Acesso por espaço confinado?',['Sim','Não'])}
@@ -1117,6 +1144,40 @@ function renderServico(t) {
     ${checkList('end','Ensaios Não Destrutivos necessários',ends)}
     ${campo('processo','Informações do Processo (para inspeção)','textarea',{placeholder:'Temperatura, pressão de operação atual, ciclos de operação, histórico de falhas…'})}
     ${campo('risco_observado','Riscos Observados','textarea',{placeholder:'Corrosão externa, vazamentos, deformações…'})}`;
+  const fotosSecao = getFotosSecao('servico', t);
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
+}
+
+function renderEnquadramento(t) {
+  const enquadra = SES.dados.enquadra_nr13 || '';
+  const motivosEnq = ['PMTA > 0,8 kgf/cm²','Produto perigoso/classe A/B','Volume acima do limite normativo','Fluido sob pressão em regime contínuo','Equipamento listado no inventário NR13','Processo crítico com risco potencial'];
+  const motivosNao = ['Pressão abaixo de 0,8 kgf/cm²','Fluido não perigoso e baixo risco','Equipamento desativado permanentemente','Sistema atmosférico sem sobrepressão','Sem caracterização de vaso/caldeira/tubulação NR13','Dados insuficientes para classificação conclusiva'];
+  let html = `
+    ${toggle('enquadra_nr13','Enquadramento do item',['Sim, enquadra conforme 13.2.1','Não enquadra conforme 13.2.2','Dúvida / necessita avaliação PLH','Fora do escopo'])}
+    ${campo('base_enquadramento','Base de enquadramento','textarea',{placeholder:'Fundamente com base normativa e evidências de campo.'})}`;
+  if (enquadra === 'Sim, enquadra conforme 13.2.1') {
+    html += checkList('enq_motivo','Motivos de enquadramento (NR13)',motivosEnq);
+  }
+  if (enquadra === 'Não enquadra conforme 13.2.2') {
+    html += campo('motivo_nao_enquadramento','Motivo de não enquadramento','select',{options:motivosNao});
+    html += campo('acao_nao_enquadramento','Ação para não enquadramento','select',{options:['Formalização documental','Sem ação','Aguardar avaliação PLH','Outro']});
+  }
+  html += campo('situacao_nr13','Situação NR13','select',{options:['Em dia','Vencida','Nunca inspecionada','Sem documentação','Fora do escopo NR13','A classificar']});
+  html += campo('observacao_enquadramento','Observações de enquadramento','textarea',{placeholder:'Complementos, restrições e recomendações.'});
+  return html;
+}
+
+function getFotosSecao(secaoId, tipo) {
+  const mapa = {
+    ident: ['foto_placa','foto_tag','foto_geral_equip'],
+    projeto: ['foto_folha_dados','foto_trecho_pmta'],
+    dimensoes: ['foto_medicao','foto_corpo','foto_conexoes'],
+    disp: ['foto_psv','foto_manometro','foto_cert_psv','foto_cert_man'],
+    docs: ['foto_prontuario','foto_registro_seg','foto_rel_anterior','foto_cert_psv_doc'],
+    servico: ['foto_ambiente','foto_acesso','foto_risco'],
+  };
+  if (secaoId === 'obs') return getFotosDefs(tipo);
+  return (mapa[secaoId] || []).map(k => ({ key: k, defaultLabel: k.replace('foto_','Foto ').replaceAll('_',' ') }));
 }
 
 // ── SEÇÃO G: OBSERVAÇÕES E FOTO ──
