@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ColectTap v1.1 — Levantamento NR-13 · Engetap</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:     #0d1b2a;
+  --surf:   #16283d;
+  --surf2:  #1e3450;
+  --surf3:  #243d5c;
+  --border: #2a4a6e;
+  --accent: #0ea5e9;
+  --accent2:#38bdf8;
+  --ok:     #22c55e;
+  --warn:   #f59e0b;
+  --danger: #ef4444;
+  --pend:   #a78bfa;
+  --text:   #e8f4ff;
+  --text2:  #7fb3d0;
+  --text3:  #3d6487;
+  --head:   'Barlow Condensed', sans-serif;
+  --body:   'Barlow', sans-serif;
+  --r:      14px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--body)}
+
+/* SCREENS */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);transition:opacity .25s,transform .25s}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateX(30px)}
+.screen.out{opacity:0;pointer-events:none;transform:translateX(-30px)}
+
+/* HEADER */
+.hdr{padding:14px 18px 10px;display:flex;align-items:center;gap:12px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surf)}
+.hdr-back{background:var(--surf2);border:1px solid var(--border);border-radius:10px;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;flex-shrink:0;color:var(--text2)}
+.hdr-back:active{opacity:.7}
+.hdr-info{flex:1;min-width:0}
+.hdr-title{font-family:var(--head);font-size:20px;font-weight:700;color:var(--text);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-sub{font-size:12px;color:var(--text2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-badge{background:var(--accent);color:#fff;font-family:var(--head);font-size:13px;font-weight:700;padding:4px 10px;border-radius:8px;letter-spacing:.5px;flex-shrink:0}
+
+/* BODY */
+.body{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:16px}
+.body::-webkit-scrollbar{display:none}
+
+/* BOT */
+.bot{flex-shrink:0;padding:12px 16px calc(12px + var(--safe-bottom));border-top:1px solid var(--border);background:var(--surf);display:flex;gap:10px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:8px;border:none;border-radius:12px;cursor:pointer;font-family:var(--body);font-size:15px;font-weight:600;padding:14px 22px;transition:opacity .15s,transform .1s;user-select:none}
+.btn:active{opacity:.8;transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff;flex:1;justify-content:center}
+.btn-ghost{background:var(--surf2);color:var(--text2);border:1px solid var(--border);flex:1;justify-content:center}
+.btn-ok{background:#14532d;color:var(--ok);border:1px solid #166534}
+.btn-danger{background:#450a0a;color:var(--danger);border:1px solid #7f1d1d}
+.btn-full{width:100%;justify-content:center}
+.btn-sm{padding:9px 14px;font-size:13px;border-radius:9px}
+.btn-warn{background:#431407;color:var(--warn);border:1px solid #78350f;flex:1;justify-content:center}
+.btn-pdf{background:#7c3aed;color:#fff;flex:1;justify-content:center}
+
+/* PROGRESS */
+.progress-wrap{padding:10px 18px 0;flex-shrink:0}
+.progress-track{height:3px;background:var(--surf3);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
+.progress-label{font-size:11px;color:var(--text3);margin-top:4px;text-align:right;letter-spacing:.5px}
+
+/* PIN */
+.pin-logo{text-align:center;padding:32px 0 16px}
+.pl-badge{display:inline-block;background:var(--accent);color:#fff;font-family:var(--head);font-size:22px;font-weight:800;padding:8px 18px;border-radius:12px;letter-spacing:2px;margin-bottom:6px}
+.pl-name{font-family:var(--head);font-size:28px;font-weight:700;color:var(--text);letter-spacing:1px}
+.pl-sub{font-size:12px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.pin-dots{display:flex;gap:16px;justify-content:center;margin:28px 0 24px}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:background .15s,border-color .15s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-dot.err{background:var(--danger);border-color:var(--danger)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 10px}
+.key{background:var(--surf2);border:1px solid var(--border);border-radius:14px;height:70px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:background .1s;user-select:none}
+.key:active{background:var(--surf3)}
+.key .kn{font-family:var(--head);font-size:28px;font-weight:700;color:var(--text);line-height:1}
+.key .kl{font-size:9px;color:var(--text3);letter-spacing:2px;margin-top:1px}
+.key-del{background:var(--surf3)}
+.key-ok{background:var(--accent)}
+.key-ok .kn,.key-ok .kl{color:#fff}
+.pin-status{text-align:center;font-size:13px;color:var(--text2);padding:12px 0 0;min-height:40px}
+
+/* GAS STATUS */
+.gas-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:8px 18px 0;flex-shrink:0}
+.gas-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);flex-shrink:0}
+.gas-dot.ok{background:var(--ok)}
+.gas-dot.err{background:var(--danger)}
+.gas-dot.spin{background:var(--accent);animation:spin-pulse 1s infinite}
+@keyframes spin-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* OS CARD */
+.os-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;cursor:pointer;transition:border-color .15s}
+.os-card:active{background:var(--surf2)}
+.os-card:hover{border-color:var(--accent2)}
+.os-num{font-family:var(--head);font-size:22px;font-weight:800;color:var(--text)}
+.os-cli{font-size:15px;font-weight:600;color:var(--text2);margin-top:2px}
+.os-desc{font-size:13px;color:var(--text3);margin-top:4px}
+.os-meta{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+
+/* PILL */
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.pill-blue{background:#0c2d4a;color:var(--accent2);border:1px solid #1a4a6e}
+.pill-ok{background:#052e16;color:var(--ok);border:1px solid #14532d}
+.pill-warn{background:#431407;color:var(--warn);border:1px solid #78350f}
+.pill-gray{background:var(--surf2);color:var(--text2);border:1px solid var(--border)}
+.pill-pend{background:#2e1065;color:var(--pend);border:1px solid #4c1d95}
+
+/* EQUIP CARD */
+.equip-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.equip-card:active{background:var(--surf2)}
+.equip-card.done{border-color:var(--ok)}
+.equip-card.done .ec-tag{color:var(--ok)}
+.ec-tag{font-family:var(--head);font-size:22px;font-weight:800;color:var(--text)}
+.ec-tipo{font-size:12px;color:var(--text2);margin-top:2px}
+.ec-status{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.ec-add{border:1px dashed var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px;cursor:pointer;color:var(--text2);font-size:14px;font-weight:600;background:transparent;transition:color .15s,border-color .15s;width:100%}
+.ec-add:hover{color:var(--accent);border-color:var(--accent)}
+
+/* TYPE GRID */
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.type-card{background:var(--surf);border:2px solid var(--border);border-radius:var(--r);padding:20px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,background .1s}
+.type-card:active{background:var(--surf2)}
+.type-card:hover,.type-card.sel{border-color:var(--accent);background:rgba(14,165,233,.08)}
+.tc-icon{font-size:32px}
+.tc-name{font-family:var(--head);font-size:16px;font-weight:700;color:var(--text);text-align:center}
+
+/* FIELD / FORM */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:15px;color:var(--text);font-family:var(--body)}
+.field input::placeholder,.field textarea::placeholder{color:var(--text3)}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--accent);background:var(--surf2)}
+.field select option{background:var(--surf)}
+.field-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.field textarea{resize:none;min-height:72px}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* TOGGLE (sim/não) */
+.toggle-row{display:flex;gap:8px;margin-bottom:14px}
+.toggle-opt{flex:1;padding:11px 6px;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);background:var(--surf);transition:all .15s}
+.toggle-opt.sel-ok{background:#052e16;border-color:var(--ok);color:var(--ok)}
+.toggle-opt.sel-no{background:#450a0a;border-color:var(--danger);color:var(--danger)}
+.toggle-opt.sel-na{background:#1e1b4b;border-color:var(--pend);color:var(--pend)}
+
+/* CHECKBOX LIST */
+.check-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.check-item{display:flex;align-items:center;gap:12px;background:var(--surf);border:1px solid var(--border);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s}
+.check-item.checked{border-color:var(--ok);background:rgba(34,197,94,.07)}
+.check-box{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:13px}
+.check-item.checked .check-box{background:var(--ok);border-color:var(--ok);color:#fff}
+.check-label{font-size:14px;font-weight:600;color:var(--text)}
+
+/* SECTION SEPARATOR */
+.sec-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.sec-label:first-child{border-top:none;padding-top:0;margin-top:0}
+
+/* PHOTO */
+.photo-btn{display:flex;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--border);border-radius:12px;padding:18px;cursor:pointer;color:var(--text2);font-size:14px;font-weight:600;background:transparent;width:100%;margin-bottom:14px;transition:all .15s}
+.photo-btn:hover{border-color:var(--accent);color:var(--accent)}
+.photo-thumb{width:100%;border-radius:10px;max-height:180px;object-fit:cover;margin-bottom:10px;display:block}
+.photo-clear{font-size:12px;color:var(--danger);cursor:pointer;text-align:center;margin-bottom:14px;display:block}
+input[type=file]{display:none}
+
+/* TOAST */
+#toast{position:fixed;bottom:calc(90px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:var(--ok);color:#fff;padding:10px 20px;border-radius:20px;font-weight:600;font-size:13px;opacity:0;transition:all .3s;pointer-events:none;z-index:9999;white-space:nowrap;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--danger)}
+#toast.warn{background:var(--warn)}
+
+/* DIALOG */
+.dialog-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:flex-end;justify-content:center;padding:16px;padding-bottom:calc(16px + var(--safe-bottom))}
+.dialog-overlay.open{display:flex}
+.dialog{background:var(--surf);border:1px solid var(--border);border-radius:20px;width:100%;max-width:440px;overflow:hidden;max-height:85vh;display:flex;flex-direction:column}
+.dialog-head{padding:20px 20px 12px;font-family:var(--head);font-size:20px;font-weight:700;color:var(--text);flex-shrink:0}
+.dialog-body{padding:0 20px 16px;font-size:14px;color:var(--text2);line-height:1.5;overflow-y:auto}
+.dialog-foot{padding:12px 16px 16px;display:flex;gap:10px;flex-shrink:0;border-top:1px solid var(--border)}
+
+/* LOADING */
+#loadingOverlay{position:fixed;inset:0;background:rgba(13,27,42,.85);z-index:999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+#loadingOverlay.open{display:flex}
+.spinner{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:15px;color:var(--text2);font-weight:600}
+
+/* SUCCESS */
+.success-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;text-align:center;flex:1}
+.success-icon{font-size:72px;margin-bottom:20px}
+.success-title{font-family:var(--head);font-size:32px;font-weight:800;color:var(--text);margin-bottom:8px}
+.success-sub{font-size:15px;color:var(--text2);line-height:1.6}
+.success-id{margin-top:20px;background:var(--surf2);border:1px solid var(--border);border-radius:12px;padding:14px 20px;font-family:monospace;font-size:18px;color:var(--accent2);font-weight:700}
+
+/* INFO/WARN BOX */
+.info-box{background:rgba(14,165,233,.1);border:1px solid rgba(14,165,233,.3);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--accent2);margin-bottom:14px;line-height:1.5}
+.warn-box{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--warn);margin-bottom:14px;line-height:1.5}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:32px 16px;color:var(--text3)}
+.empty-state .ei{font-size:40px;margin-bottom:10px}
+
+/* REVISION CARD */
+.rev-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);margin-bottom:12px;overflow:hidden}
+.rev-head{padding:12px 14px;background:var(--surf2);display:flex;justify-content:space-between;align-items:center}
+.rev-head-tag{font-family:var(--head);font-size:18px;font-weight:700;color:var(--text)}
+.rev-head-tipo{font-size:12px;color:var(--text2)}
+.rev-row{display:flex;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--border);font-size:13px}
+.rev-row:last-child{border-bottom:none}
+.rev-label{color:var(--text2);flex:1}
+.rev-value{color:var(--text);font-weight:600;text-align:right;max-width:55%}
+
+/* EXPORT ACTIONS */
+.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.export-btn{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 12px;border:1px solid var(--border);border-radius:14px;background:var(--surf);cursor:pointer;transition:all .15s;text-align:center}
+.export-btn:active{background:var(--surf2)}
+.export-btn .eb-icon{font-size:28px}
+.export-btn .eb-label{font-family:var(--head);font-size:14px;font-weight:700;color:var(--text)}
+.export-btn .eb-sub{font-size:11px;color:var(--text2)}
+.export-btn.pdf-btn{border-color:#7c3aed;background:rgba(124,58,237,.1)}
+.export-btn.xls-btn{border-color:var(--ok);background:rgba(34,197,94,.07)}
+.export-btn.upload-btn{border-color:var(--accent);background:rgba(14,165,233,.08)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- T1 — LOGIN / PIN                                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen" id="scr-t1">
+  <div class="gas-row"><div class="gas-dot spin" id="gasDot"></div><span id="gasLabel">Conectando…</span></div>
+  <div class="body" style="display:flex;flex-direction:column">
+    <div class="pin-logo">
+      <div class="pl-badge">COLECT</div>
+      <div class="pl-name">Tap</div>
+      <div class="pl-sub">Engetap · NR-13 · v1.1</div>
+    </div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="keypad">
+      <div class="key" onclick="keyPress('1')"><div class="kn">1</div><div class="kl">   </div></div>
+      <div class="key" onclick="keyPress('2')"><div class="kn">2</div><div class="kl">ABC</div></div>
+      <div class="key" onclick="keyPress('3')"><div class="kn">3</div><div class="kl">DEF</div></div>
+      <div class="key" onclick="keyPress('4')"><div class="kn">4</div><div class="kl">GHI</div></div>
+      <div class="key" onclick="keyPress('5')"><div class="kn">5</div><div class="kl">JKL</div></div>
+      <div class="key" onclick="keyPress('6')"><div class="kn">6</div><div class="kl">MNO</div></div>
+      <div class="key" onclick="keyPress('7')"><div class="kn">7</div><div class="kl">PQRS</div></div>
+      <div class="key" onclick="keyPress('8')"><div class="kn">8</div><div class="kl">TUV</div></div>
+      <div class="key" onclick="keyPress('9')"><div class="kn">9</div><div class="kl">WXYZ</div></div>
+      <div class="key key-del" onclick="keyDel()"><div class="kn" style="font-size:22px">⌫</div></div>
+      <div class="key" onclick="keyPress('0')"><div class="kn">0</div><div class="kl">   </div></div>
+      <div class="key key-ok" onclick="keyOk()"><div class="kn" style="font-size:20px">✓</div></div>
+    </div>
+    <div class="pin-status" id="pinStatus">Digite seu PIN de 4 dígitos</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- T2 — SELECIONAR OS                                      -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="scr-t2">
+  <div class="hdr">
+    <div class="hdr-info">
+      <div class="hdr-title">Ordens de Serviço</div>
+      <div class="hdr-sub" id="t2-inspector">Inspetor</div>
+    </div>
+    <button onclick="atualizarOS()" style="background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:14px;cursor:pointer;color:var(--text2)" title="Atualizar">🔄</button>
+  </div>
+  <div class="body" id="t2-body"><div class="empty-state"><div class="ei">📋</div>Carregando…</div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- T3 — EQUIPAMENTOS DA OS                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="scr-t3">
+  <div class="hdr">
+    <div class="hdr-back" onclick="goTo('t2')">‹</div>
+    <div class="hdr-info">
+      <div class="hdr-title" id="t3-os-num">OS —</div>
+      <div class="hdr-sub" id="t3-cliente">Cliente</div>
+    </div>
+    <div class="hdr-badge" id="t3-badge">0/0</div>
+  </div>
+  <div class="body" id="t3-body"></div>
+  <div class="bot" style="flex-wrap:wrap;gap:8px">
+    <button class="btn btn-ghost btn-sm" style="flex:1" onclick="openExportScreen()">📤 Exportar</button>
+    <button class="btn btn-primary btn-sm" style="flex:2" onclick="abrirNovoEquip()">+ Novo Equipamento</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- T4 — TIPO DO EQUIPAMENTO                                -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="scr-t4">
+  <div class="hdr">
+    <div class="hdr-back" onclick="goTo('t3')">‹</div>
+    <div class="hdr-info"><div class="hdr-title">Tipo de Equipamento</div><div class="hdr-sub">Selecione para configurar o formulário</div></div>
+  </div>
+  <div class="body">
+    <p class="sec-label">Qual é o tipo do equipamento?</p>
+    <div class="type-grid">
+      <div class="type-card" onclick="selectTipoEquip('vaso')"><div class="tc-icon">🔵</div><div class="tc-name">Vaso de Pressão</div></div>
+      <div class="type-card" onclick="selectTipoEquip('caldeira')"><div class="tc-icon">🔴</div><div class="tc-name">Caldeira</div></div>
+      <div class="type-card" onclick="selectTipoEquip('tubulacao')"><div class="tc-icon">⚙️</div><div class="tc-name">Tubulação</div></div>
+      <div class="type-card" onclick="selectTipoEquip('tanque')"><div class="tc-icon">🟡</div><div class="tc-name">Tanque Metálico</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- T5 — FORMULÁRIO DO EQUIPAMENTO                         -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="scr-t5">
+  <div class="hdr">
+    <div class="hdr-back" onclick="goTo('t4')">‹</div>
+    <div class="hdr-info">
+      <div class="hdr-title" id="t5-tipo-label">Vaso de Pressão</div>
+      <div class="hdr-sub" id="t5-os-label">OS —</div>
+    </div>
+    <div class="hdr-badge" id="t5-badge">Novo</div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="t5-progress" style="width:20%"></div></div>
+    <div class="progress-label" id="t5-progress-lbl">Seção 1 de 7</div>
+  </div>
+  <div class="body" id="t5-body"></div>
+  <div class="bot">
+    <button class="btn btn-ghost" id="t5-btn-back" onclick="secBack()">‹ Anterior</button>
+    <button class="btn btn-primary" id="t5-btn-next" onclick="secNext()">Próximo →</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- T6 — REVISÃO DO EQUIPAMENTO                            -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="scr-t6">
+  <div class="hdr">
+    <div class="hdr-back" onclick="goTo('t5')">‹</div>
+    <div class="hdr-info">
+      <div class="hdr-title" id="t6-tag">Revisão</div>
+      <div class="hdr-sub" id="t6-tipo">Equipamento</div>
+    </div>
+    <div class="hdr-badge">REV</div>
+  </div>
+  <div class="body" id="t6-body"></div>
+  <div class="bot">
+    <button class="btn btn-ghost" onclick="goTo('t5')">✏️ Editar</button>
+    <button class="btn btn-ok" onclick="salvarEquipamento()">✓ Salvar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- T-EXPORT — EXPORTAR / GERAR PDF                        -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="scr-t-export">
+  <div class="hdr">
+    <div class="hdr-back" onclick="goTo('t3')">‹</div>
+    <div class="hdr-info">
+      <div class="hdr-title">Exportar Dados</div>
+      <div class="hdr-sub" id="exp-os-label">OS —</div>
+    </div>
+  </div>
+  <div class="body">
+    <div class="info-box" id="exp-summary">Equipamentos coletados: —</div>
+    <p class="sec-label">Relatórios PDF</p>
+    <div class="export-grid">
+      <div class="export-btn pdf-btn" onclick="gerarPDFEquip('individual')">
+        <div class="eb-icon">📄</div>
+        <div class="eb-label">PDF Individual</div>
+        <div class="eb-sub">Um arquivo por equipamento</div>
+      </div>
+      <div class="export-btn pdf-btn" onclick="gerarPDFEquip('completo')">
+        <div class="eb-icon">📋</div>
+        <div class="eb-label">PDF Completo</div>
+        <div class="eb-sub">Todos em um arquivo</div>
+      </div>
+    </div>
+    <p class="sec-label">Planilha de Dados</p>
+    <div class="export-grid">
+      <div class="export-btn xls-btn" onclick="exportarCSV()">
+        <div class="eb-icon">📊</div>
+        <div class="eb-label">Exportar CSV</div>
+        <div class="eb-sub">Abrir no Excel</div>
+      </div>
+      <div class="export-btn upload-btn" onclick="enviarGAS()">
+        <div class="eb-icon">☁️</div>
+        <div class="eb-label">Enviar ao GAS</div>
+        <div class="eb-sub">Salvar no Google Sheets</div>
+      </div>
+    </div>
+    <div class="warn-box">💡 Gere o PDF individual de cada equipamento para entrega ao cliente. Use o PDF Completo para revisar tudo de uma vez.</div>
+    <p class="sec-label">Selecionar equipamento para PDF Individual</p>
+    <div id="exp-equip-list"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- TC — CONFIRMAÇÃO / SUCESSO                             -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="screen hidden" id="scr-tc">
+  <div class="hdr">
+    <div class="hdr-info"><div class="hdr-title">Dados Enviados</div><div class="hdr-sub">ColectTap · NR-13</div></div>
+  </div>
+  <div class="body">
+    <div class="success-wrap">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Levantamento Salvo!</div>
+      <div class="success-sub" id="tc-summary">Todos os equipamentos foram registrados.</div>
+      <div class="success-id" id="tc-id">LNR-2026-001</div>
+    </div>
+  </div>
+  <div class="bot"><button class="btn btn-primary btn-full" onclick="goTo('t2')">Nova OS →</button></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- DIALOGS                                                 -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div class="dialog-overlay" id="modal-confirm">
+  <div class="dialog">
+    <div class="dialog-head" id="dlg-title">Confirmar</div>
+    <div class="dialog-body" id="dlg-body">Tem certeza?</div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeDialog('modal-confirm')">Cancelar</button>
+      <button class="btn btn-danger btn-sm" style="flex:1" id="dlg-confirm-btn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="dialog-overlay" id="modal-pendencia">
+  <div class="dialog" style="max-width:560px">
+    <div class="dialog-head">Campo não preenchido</div>
+    <div class="dialog-body">
+      <div id="pend-subtitle" style="margin-bottom:10px;color:var(--text2)"></div>
+      <div id="pend-motivos" style="display:grid;gap:6px;margin-bottom:10px"></div>
+      <textarea id="pend-obs" placeholder="Observação (opcional)" style="width:100%;min-height:80px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--body)"></textarea>
+    </div>
+    <div class="dialog-foot">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="closeDialog('modal-pendencia')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" style="flex:1" id="pend-confirm-btn">Registrar Pendência</button>
+    </div>
+  </div>
+</div>
+
+<div id="loadingOverlay"><div class="spinner"></div><div class="loading-txt" id="loadingTxt">Aguarde…</div></div>
+<div id="toast"></div>
+<input type="file" id="fileInputCamera" accept="image/*" capture="environment" style="display:none">
+<input type="file" id="fileInputGallery" accept="image/*" style="display:none">
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbzvPXKe9uYtOPJVqqEsPadYeB2JoFxITmxTTo4Pj4DuCgL1lxxe6b-wLcLAPlx8PSfX/exec';
+const APP_VERSION = 'ColectTap-v1.2';
+const AUTOSAVE_INTERVAL_MS = 25000;
+const FOTO_MAX_SIZE = 800;
+const FOTO_JPEG_QUALITY = 0.82;
+
+
+let _dirty = false;
+
+function gerarId4() {
+  return Math.floor(Math.random() * 0x10000).toString(16).padStart(4, '0');
+}
+
+function ensureVisitId() {
+  if (SES.id_visita_colect) return SES.id_visita_colect;
+  const osn = (SES.os && SES.os.numero_os ? SES.os.numero_os : 'SEMOS').replace(/\s+/g, '');
+  const d = new Date();
+  const stamp = d.getFullYear().toString() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '-' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0') + String(d.getSeconds()).padStart(2,'0');
+  SES.id_visita_colect = `VIS-${osn}-${stamp}-${gerarId4()}`;
+  return SES.id_visita_colect;
+}
+
+function ensureEquipId() {
+  if (SES.id_equipamento_colect) return SES.id_equipamento_colect;
+  const osn = (SES.os && SES.os.numero_os ? SES.os.numero_os : 'SEMOS').replace(/\s+/g, '');
+  const d = new Date();
+  const stamp = d.getFullYear().toString() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0') + '-' + String(d.getHours()).padStart(2,'0') + String(d.getMinutes()).padStart(2,'0') + String(d.getSeconds()).padStart(2,'0');
+  SES.id_equipamento_colect = `EQ-${osn}-${stamp}-${gerarId4()}`;
+  return SES.id_equipamento_colect;
+}
+
+function markDirty() { _dirty = true; }
+
+function persistCurrentEquipDraft(reason='manual') {
+  if (!SES.os || !SES.os.id_os) return;
+  ensureVisitId();
+  ensureEquipId();
+  const chave = 'colect_os_' + SES.os.id_os;
+  let base = {};
+  try { base = JSON.parse(localStorage.getItem(chave) || '{}'); } catch(e) { base = {}; }
+  const now = new Date().toISOString();
+  const draftEq = {
+    id_equipamento_colect: SES.id_equipamento_colect,
+    tipo: SES.tipoEquip || SES.dados.tipo || '',
+    dados: {...SES.dados},
+    fotos: {...SES.fotos},
+    pendencias: [...(SES.pendencias || [])],
+    status_completude: 'rascunho',
+    created_at: base.created_at || now,
+    updated_at: now,
+    sync_status: 'local'
+  };
+  const equipamentos = Array.isArray(base.equipamentos) ? base.equipamentos : [];
+  const idx = equipamentos.findIndex(e => e.id_equipamento_colect === draftEq.id_equipamento_colect);
+  if (idx >= 0) equipamentos[idx] = {...equipamentos[idx], ...draftEq}; else equipamentos.push(draftEq);
+  const payload = {
+    id_visita_colect: SES.id_visita_colect, os: SES.os, inspetor: SES.inspetor, equipamentos,
+    updated_at: now, sync_status: 'local', app_version: APP_VERSION, reason
+  };
+  localStorage.setItem(chave, JSON.stringify(payload));
+}
+function autosaveDraft(reason='auto') { if (_dirty !== true) return; persistCurrentEquipDraft(reason); _dirty = false; }
+function loadDraftsForOS(id_os) {
+  if (!id_os) return null;
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem('colect_os_' + id_os) || 'null'); } catch(e) {}
+  let legacy = [];
+  try { legacy = JSON.parse(localStorage.getItem('colect_equip_' + id_os) || '[]'); } catch(e) {}
+  if (!data) data = { equipamentos: [] };
+  if (!Array.isArray(data.equipamentos)) data.equipamentos = [];
+  legacy.forEach(eq => {
+    const id = eq.id_equipamento_colect || `EQ-${id_os}-${gerarId4()}`;
+    if (!data.equipamentos.some(e => e.id_equipamento_colect === id)) data.equipamentos.push({ id_equipamento_colect:id, tipo:eq.tipo||'', dados:{...eq}, fotos:{...(eq._fotos||{})}, pendencias:[], status_completude:eq._salvo?'salvo':'rascunho', created_at:new Date().toISOString(), updated_at:new Date().toISOString(), sync_status:'legacy' });
+  });
+  return data;
+}
+function restoreDraftIfExists() {
+  if (!SES.os || !SES.os.id_os) return;
+  const d = loadDraftsForOS(SES.os.id_os);
+  if (!d || !Array.isArray(d.equipamentos) || !d.equipamentos.length) return;
+  SES.equipamentos = d.equipamentos.map(e => ({ ...(e.dados||{}), _fotos:(e.fotos||{}), _salvo:true, id_equipamento_colect:e.id_equipamento_colect }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ESTADO DA SESSÃO
+// ═══════════════════════════════════════════════════════════════
+const SES = {
+  inspetor: null,
+  os: null,
+  _osList: [],
+  equipamentos: [],       // equipamentos coletados nesta OS (local)
+  equipEdit: null,        // equipamento em edição {idx, dados}
+  tipoEquip: null,        // 'vaso'|'caldeira'|'tubulacao'|'tanque'
+  secAtual: 0,            // seção atual do formulário
+  dados: {},              // campos do formulário em andamento
+  fotos: {},              // { campo: { dataUrl, w, h } }
+  history: [],
+  pendencias: [],
+};
+
+// Seções por tipo de equipamento
+function getSecoes(tipo) {
+  const comuns = [
+    { id:'ident',    label:'A — Identificação',         icon:'🏷️'  },
+    { id:'projeto',  label:'B — Dados de Projeto',      icon:'📐'  },
+    { id:'dimensoes',label:'C — Dimensões',             icon:'📏'  },
+    { id:'disp',     label:'D — Dispositivos de Seg.',  icon:'🔒'  },
+    { id:'docs',     label:'E — Documentação',          icon:'📁'  },
+    { id:'servico',  label:'F — Condições de Serviço',  icon:'⚠️'  },
+    { id:'obs',      label:'G — Observações e Foto',    icon:'📷'  },
+  ];
+  return comuns; // todas as seções para todos os tipos (campos variam dentro)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DEMO DATA
+// ═══════════════════════════════════════════════════════════════
+function getDemoOS() {
+  return [
+    { id_os:'LNR-2026-001', numero_os:'LNR-001', cliente:'Inglesa — Mineração', id_cliente:'CLI-ING', descricao:'Levantamento NR-13 completo', data_abertura:'2026-05-13', status:'ativa' },
+    { id_os:'LNR-2026-002', numero_os:'LNR-002', cliente:'Farmax Farmacêutica', id_cliente:'CLI-FAR', descricao:'Inspeção inicial NR-13', data_abertura:'2026-05-10', status:'ativa' },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAS API
+// ═══════════════════════════════════════════════════════════════
+const DEMO_MODE = !GAS_URL || GAS_URL.includes('COLE_AQUI');
+
+async function gasGet(action, params={}) {
+  const url = new URL(GAS_URL);
+  url.searchParams.set('action', action);
+  url.searchParams.set('_ts', Date.now());
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k, v));
+  const mkFetch = () => Promise.race([
+    fetch(url, { redirect:'follow', cache:'no-store' }),
+    new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), 18000))
+  ]);
+  let resp;
+  try { resp = await mkFetch(); }
+  catch(e) { await new Promise(r => setTimeout(r, 800)); resp = await mkFetch(); }
+  const text = await resp.text();
+  try { return JSON.parse(text); }
+  catch(e) { throw new Error('Resposta inválida do GAS: ' + text.substring(0,120)); }
+}
+
+async function gasPost(action, data={}) {
+  const url = new URL(GAS_URL);
+  url.searchParams.set('action', action);
+  const r = await Promise.race([
+    fetch(url, { method:'POST', body:JSON.stringify({action,...data}), redirect:'follow' }),
+    new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), 25000))
+  ]);
+  return r.json();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GAS STATUS
+// ═══════════════════════════════════════════════════════════════
+function setGASStatus(state, label) {
+  const dot = document.getElementById('gasDot');
+  const lbl = document.getElementById('gasLabel');
+  if (dot) { dot.className = 'gas-dot' + (state ? ' '+state : ''); }
+  if (lbl) lbl.textContent = label;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVEGAÇÃO
+// ═══════════════════════════════════════════════════════════════
+let currentScreen = 't1';
+
+function goTo(id) {
+  const prev = document.getElementById('scr-' + currentScreen);
+  const next = document.getElementById('scr-' + id);
+  if (!next) return;
+  if (prev) prev.classList.add('out');
+  setTimeout(() => {
+    if (prev) { prev.classList.add('hidden'); prev.classList.remove('out'); }
+    next.classList.remove('hidden');
+    currentScreen = id;
+  }, 220);
+}
+
+function goBack() {
+  if (SES.history.length > 0) goTo(SES.history.pop());
+}
+
+function push(id) { SES.history.push(currentScreen); goTo(id); }
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST & LOADING
+// ═══════════════════════════════════════════════════════════════
+let _toastTimer;
+function showToast(msg, type='ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show' + (type!=='ok' ? ' '+type : '');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.className = ''; }, 3200);
+}
+
+function showLoading(txt='Aguarde…') {
+  document.getElementById('loadingTxt').textContent = txt;
+  document.getElementById('loadingOverlay').classList.add('open');
+}
+function hideLoading() { document.getElementById('loadingOverlay').classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════════
+// DIALOG
+// ═══════════════════════════════════════════════════════════════
+function openDialog(title, body, confirmLabel, onConfirm, dangerous=true) {
+  document.getElementById('dlg-title').textContent = title;
+  document.getElementById('dlg-body').textContent = body;
+  const btn = document.getElementById('dlg-confirm-btn');
+  btn.textContent = confirmLabel;
+  btn.className = 'btn btn-sm ' + (dangerous ? 'btn-danger' : 'btn-ok');
+  btn.onclick = () => { closeDialog('modal-confirm'); onConfirm(); };
+  document.getElementById('modal-confirm').classList.add('open');
+}
+function closeDialog(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════════
+// PIN / LOGIN
+// ═══════════════════════════════════════════════════════════════
+let pin = '';
+
+function keyPress(d) {
+  if (pin.length >= 4) return;
+  pin += d;
+  updateDots();
+  if (pin.length === 4) setTimeout(keyOk, 200);
+}
+function keyDel() { if (pin.length) { pin = pin.slice(0,-1); updateDots(); } }
+function updateDots() {
+  for (let i=0;i<4;i++) document.getElementById('pd'+i).className = 'pin-dot' + (i < pin.length ? ' filled' : '');
+}
+
+async function keyOk() {
+  if (pin.length < 4) return;
+  document.getElementById('pinStatus').textContent = 'Verificando…';
+  if (DEMO_MODE) {
+    if (pin === '1234') { SES.inspetor = {id_inspetor:'INS-001', nome:'Inspetor Demo'}; afterLogin(); }
+    else if (pin === '5678') { SES.inspetor = {id_inspetor:'INS-002', nome:'Fernando Guimarães'}; afterLogin(); }
+    else pinError();
+    return;
+  }
+  try {
+    const r = await gasGet('validarPIN', {pin});
+    if (r.valido) { SES.inspetor = {id_inspetor:r.id_inspetor, nome:r.nome}; afterLogin(); }
+    else pinError();
+  } catch(e) {
+    document.getElementById('pinStatus').textContent = 'GAS indisponível — modo demo';
+    if (pin === '1234') { SES.inspetor = {id_inspetor:'INS-001', nome:'Demo'}; afterLogin(); }
+    else pinError();
+  }
+}
+
+function pinError() {
+  for (let i=0;i<4;i++) document.getElementById('pd'+i).className = 'pin-dot err';
+  document.getElementById('pinStatus').textContent = 'PIN inválido';
+  setTimeout(() => { pin=''; updateDots(); document.getElementById('pinStatus').textContent = 'Digite seu PIN de 4 dígitos'; }, 1200);
+}
+
+async function afterLogin() {
+  setGASStatus('spin','Carregando OS…');
+  if (DEMO_MODE) {
+    SES._osList = getDemoOS();
+    setGASStatus('', 'Modo demo local');
+    renderT2();
+    return;
+  }
+  try {
+    const r = await gasGet('getOSColect', {id_inspetor: SES.inspetor.id_inspetor});
+    if (r.status === 'ok') SES._osList = r.os || [];
+    setGASStatus('ok','GAS conectado ✓');
+  } catch(e) {
+    SES._osList = getDemoOS();
+    setGASStatus('err','Falha GAS — demo');
+  }
+  renderT2();
+}
+
+async function atualizarOS() {
+  if (!SES.inspetor) return;
+  if (DEMO_MODE) { SES._osList = getDemoOS(); renderT2(); return; }
+  setGASStatus('spin','Atualizando…');
+  try {
+    const r = await gasGet('getOSColect', {id_inspetor: SES.inspetor.id_inspetor});
+    if (r.status === 'ok') SES._osList = r.os || [];
+    setGASStatus('ok','GAS conectado ✓');
+    renderT2();
+    showToast('OS atualizadas ✓');
+  } catch(e) { setGASStatus('err','Falha ao atualizar'); showToast('Falha ao atualizar','err'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// T2 — LISTA DE OS
+// ═══════════════════════════════════════════════════════════════
+function renderT2() {
+  document.getElementById('t2-inspector').textContent = SES.inspetor ? SES.inspetor.nome : '';
+  const body = document.getElementById('t2-body');
+  if (!SES._osList || !SES._osList.length) {
+    body.innerHTML = '<div class="empty-state"><div class="ei">📋</div><p>Nenhuma OS disponível</p></div>';
+    goTo('t2');
+    return;
+  }
+  body.innerHTML = SES._osList.map(os => `
+    <div class="os-card" onclick="selectOS('${os.id_os}')">
+      <div class="os-num">${os.numero_os}</div>
+      <div class="os-cli">${os.cliente}</div>
+      <div class="os-desc">${os.descricao || ''}</div>
+      <div class="os-meta">
+        <span class="pill pill-blue">🔬 NR-13</span>
+        <span class="pill pill-gray">📅 ${formatDate(os.data_abertura)}</span>
+      </div>
+    </div>`).join('');
+  goTo('t2');
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  try { return new Date(d).toLocaleDateString('pt-BR'); } catch { return d; }
+}
+
+function selectOS(id) {
+  SES.os = SES._osList.find(o => o.id_os === id);
+  if (!SES.os) return;
+  // Carrega equipamentos salvos localmente para esta OS
+  const chave = 'colect_equip_' + id;
+  try { SES.equipamentos = JSON.parse(localStorage.getItem(chave) || '[]'); }
+  catch { SES.equipamentos = []; }
+  renderT3();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// T3 — EQUIPAMENTOS DA OS
+// ═══════════════════════════════════════════════════════════════
+function renderT3() {
+  document.getElementById('t3-os-num').textContent = SES.os.numero_os;
+  document.getElementById('t3-cliente').textContent = SES.os.cliente;
+  const total = SES.equipamentos.length;
+  const feitos = SES.equipamentos.filter(e => e._salvo).length;
+  document.getElementById('t3-badge').textContent = feitos + '/' + total;
+  const body = document.getElementById('t3-body');
+  if (!total) {
+    body.innerHTML = '<div class="empty-state"><div class="ei">🔍</div><p>Nenhum equipamento ainda.<br>Toque em "+ Novo Equipamento"</p></div>';
+  } else {
+    body.innerHTML = SES.equipamentos.map((eq, idx) => {
+      const tag = eq.tag || eq.numero_equip || ('EQ-' + (idx+1));
+      const tipo = labelTipo(eq.tipo);
+      const done = eq._salvo;
+      return `<div class="equip-card ${done?'done':''}" onclick="editarEquip(${idx})">
+        <div class="ec-tag">${tag}</div>
+        <div class="ec-tipo">${tipo}${eq.fabricante ? ' · ' + eq.fabricante : ''}</div>
+        <div class="ec-status">
+          ${done ? '<span class="pill pill-ok">✓ Completo</span>' : '<span class="pill pill-warn">⏳ Em andamento</span>'}
+          ${eq.categoria ? '<span class="pill pill-blue">Cat. ' + eq.categoria + '</span>' : ''}
+          ${eq.possui_foto ? '<span class="pill pill-gray">📷</span>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  goTo('t3');
+}
+
+function labelTipo(t) {
+  return {vaso:'Vaso de Pressão',caldeira:'Caldeira',tubulacao:'Tubulação',tanque:'Tanque Metálico'}[t] || t || '—';
+}
+
+function abrirNovoEquip() {
+  SES.equipEdit = null;
+  SES.dados = {};
+  SES.fotos = {};
+  SES.secAtual = 0;
+  goTo('t4');
+}
+
+function editarEquip(idx) {
+  SES.equipEdit = idx;
+  SES.dados = {...SES.equipamentos[idx]};
+  SES.tipoEquip = SES.dados.tipo;
+  SES.fotos = SES.dados._fotos || {};
+  SES.secAtual = 0;
+  renderT5();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// T4 — TIPO DO EQUIPAMENTO
+// ═══════════════════════════════════════════════════════════════
+function selectTipoEquip(tipo) {
+  SES.tipoEquip = tipo;
+  SES.dados.tipo = tipo;
+  SES.secAtual = 0;
+  renderT5();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// T5 — FORMULÁRIO POR SEÇÕES
+// ═══════════════════════════════════════════════════════════════
+const SECS = [
+  { id:'ident',     label:'A — Identificação',        icon:'🏷️',  pct:14  },
+  { id:'projeto',   label:'B — Dados de Projeto',     icon:'📐',  pct:28  },
+  { id:'dimensoes', label:'C — Dimensões',            icon:'📏',  pct:42  },
+  { id:'disp',      label:'D — Dispositivos de Seg.', icon:'🔒',  pct:57  },
+  { id:'docs',      label:'E — Documentação',         icon:'📁',  pct:71  },
+  { id:'servico',   label:'F — Condições de Serviço', icon:'⚠️',  pct:85  },
+  { id:'obs',       label:'G — Observações e Foto',   icon:'📷',  pct:100 },
+];
+
+function renderT5() {
+  const sec = SECS[SES.secAtual];
+  document.getElementById('t5-tipo-label').textContent = labelTipo(SES.tipoEquip);
+  document.getElementById('t5-os-label').textContent = SES.os ? SES.os.numero_os : '—';
+  document.getElementById('t5-badge').textContent = SES.equipEdit !== null ? 'Editando' : 'Novo';
+  document.getElementById('t5-progress').style.width = sec.pct + '%';
+  document.getElementById('t5-progress-lbl').textContent = sec.icon + ' ' + sec.label + ' (' + (SES.secAtual+1) + '/' + SECS.length + ')';
+  document.getElementById('t5-btn-back').style.opacity = SES.secAtual === 0 ? '.3' : '1';
+  document.getElementById('t5-btn-back').disabled = SES.secAtual === 0;
+  document.getElementById('t5-btn-next').textContent = SES.secAtual === SECS.length - 1 ? '✓ Revisar' : 'Próximo →';
+  const body = document.getElementById('t5-body');
+  body.innerHTML = renderSecao(sec.id);
+  restaurarCampos(sec.id);
+  body.scrollTop = 0;
+  goTo('t5');
+}
+
+function secNext() {
+  markDirty();
+  salvarCampos(SECS[SES.secAtual].id);
+  if (SES.secAtual < SECS.length - 1) {
+    SES.secAtual++;
+    renderT5();
+  } else {
+    renderT6();
+  }
+}
+
+function secBack() {
+  markDirty();
+  if (SES.secAtual === 0) return;
+  salvarCampos(SECS[SES.secAtual].id);
+  SES.secAtual--;
+  renderT5();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SEÇÕES — HTML GERADO DINAMICAMENTE
+// ═══════════════════════════════════════════════════════════════
+function renderSecao(id) {
+  const t = SES.tipoEquip;
+  switch(id) {
+    case 'ident': return renderIdentificacao(t);
+    case 'projeto': return renderProjeto(t);
+    case 'dimensoes': return renderDimensoes(t);
+    case 'disp': return renderDispositivos(t);
+    case 'docs': return renderDocumentacao(t);
+    case 'servico': return renderServico(t);
+    case 'obs': return renderObs(t);
+    default: return '';
+  }
+}
+
+function campo(id, label, type='text', opts={}) {
+  const ph = opts.placeholder || '';
+  const extra = opts.extra || '';
+  const hint = opts.hint ? `<small style="color:var(--text3);font-size:11px;display:block;margin-top:2px">${opts.hint}</small>` : '';
+  if (type === 'select') {
+    const options = (opts.options || []).map(o => {
+      const val = typeof o === 'string' ? o : o.v;
+      const lbl = typeof o === 'string' ? o : o.l;
+      return `<option value="${val}">${lbl}</option>`;
+    }).join('');
+    return `<div class="field"><label>${label}</label><select id="f_${id}" ${extra}><option value="">— Selecionar —</option>${options}</select>${hint}</div>`;
+  }
+  if (type === 'textarea') {
+    return `<div class="field"><label>${label}</label><textarea id="f_${id}" placeholder="${ph}" ${extra}></textarea>${hint}</div>`;
+  }
+  return `<div class="field"><label>${label}</label><input type="${type}" id="f_${id}" placeholder="${ph}" ${extra}>${hint}</div>`;
+}
+
+function toggle(id, label, opts=['Sim','Não','N/A']) {
+  const btns = opts.map((o,i) => {
+    const cls = i===0?'sel-ok':i===1?'sel-no':'sel-na';
+    return `<div class="toggle-opt" data-val="${o}" data-id="${id}" onclick="setToggle('${id}','${o}',this,'${cls}')">${o}</div>`;
+  }).join('');
+  return `<div class="field"><label>${label}</label><div class="toggle-row">${btns}</div></div>`;
+}
+
+function setToggle(id, val, el, cls) {
+  const row = el.closest('.toggle-row');
+  row.querySelectorAll('.toggle-opt').forEach(b => b.className = 'toggle-opt');
+  el.classList.add(cls);
+  SES.dados[id] = val;
+}
+
+function checkList(id, label, items) {
+  const checks = items.map(item => {
+    const iid = id + '_' + item.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+    return `<div class="check-item" id="ci_${iid}" onclick="toggleCheck('${iid}')">
+      <div class="check-box" id="cb_${iid}">✓</div>
+      <div class="check-label">${item}</div>
+    </div>`;
+  }).join('');
+  return `<div class="field"><label>${label}</label><div class="check-list">${checks}</div></div>`;
+}
+
+function toggleCheck(id) {
+  const ci = document.getElementById('ci_'+id);
+  const cb = document.getElementById('cb_'+id);
+  if (!ci || !cb) return;
+  const checked = ci.classList.toggle('checked');
+  if (!SES.dados._checks) SES.dados._checks = {};
+  SES.dados._checks[id] = checked;
+}
+
+// ── SEÇÃO A: IDENTIFICAÇÃO ──
+function renderIdentificacao(t) {
+  const tipoNR = {
+    vaso:    [{v:'I',l:'Categoria I'},{v:'II',l:'Categoria II'},{v:'III',l:'Categoria III'},{v:'IV',l:'Categoria IV'},{v:'V',l:'Categoria V (Isento)'}],
+    caldeira:[{v:'A',l:'Categoria A'},{v:'B',l:'Categoria B'},{v:'C',l:'Categoria C'}],
+    tubulacao:[{v:'I',l:'Classe I'},{v:'II',l:'Classe II'},{v:'III',l:'Classe III'}],
+    tanque:  [{v:'I',l:'Categoria I'},{v:'II',l:'Categoria II'},{v:'III',l:'Categoria III'}],
+  }[t] || [];
+  return `
+    ${campo('tag','TAG / Código de Identificação','text',{placeholder:'VP-01, CL-01, TUB-01…'})}
+    ${campo('fabricante','Fabricante','text',{placeholder:'Nome do fabricante'})}
+    ${campo('numero_equip','Número do Equipamento (Fabricante)','text',{placeholder:'Nº dado pelo fabricante'})}
+    ${campo('ano_fabricacao','Ano de Fabricação','number',{placeholder:'Ex: 2015'})}
+    <div class="field-row2">
+      ${campo('categoria','Categoria NR-13','select',{options:tipoNR})}
+      ${campo('codigo_projeto','Código de Projeto','text',{placeholder:'Ex: ASME VIII, NR-12…'})}
+    </div>
+    ${campo('localizacao','Localização na Planta','text',{placeholder:'Sala de compressores, área 3…'})}
+    ${toggle('placa_indelevel','Possui placa de identificação indelével?')}
+    ${toggle('necessita_tag','Necessita identificação de TAG/Categoria?')}
+    ${campo('obs_ident','Observações sobre identificação','textarea',{placeholder:'Placa ilegível, tag ausente…'})}`;
+}
+
+// ── SEÇÃO B: PROJETO ──
+function renderProjeto(t) {
+  const fluidos = ['Vapor d\'água','Ar comprimido','Nitrogênio','GLP','GN (gás natural)','Amônia','CO2','Óleo hidráulico','Água','Outro'];
+  const classesFluido = [
+    {v:'A',l:'Classe A — Inflamável/Tóxico/Letal'},
+    {v:'B',l:'Classe B — Inflamável'},
+    {v:'C',l:'Classe C — Não inflamável / Não tóxico'},
+    {v:'D',l:'Classe D — Vapor d\'água / Água quente'},
+  ];
+  return `
+    <div class="field-row2">
+      ${campo('pmta','PMTA (kgf/cm²)','number',{placeholder:'Pressão máx. trab. admissível'})}
+      ${campo('pressao_trabalho','Pressão de Trabalho (kgf/cm²)','number',{placeholder:'Pressão operacional'})}
+    </div>
+    <div class="field-row2">
+      ${campo('pressao_teste','Pressão de Teste Hidrostático (kgf/cm²)','number',{placeholder:'1,5 × PMTA'})}
+      ${campo('temperatura','Temperatura de Operação (°C)','number',{placeholder:'Ex: 180'})}
+    </div>
+    ${campo('fluido','Fluido de Trabalho','select',{options:fluidos})}
+    ${campo('fluido_outro','Especificar fluido (se Outro)','text',{placeholder:'Descreva o fluido'})}
+    ${campo('classe_fluido','Classe do Fluido (NR-13)','select',{options:classesFluido})}
+    <div class="field-row2">
+      ${campo('ano_ultima_inspecao','Ano da Última Inspeção','number',{placeholder:'Ex: 2022'})}
+      ${campo('tipo_ultima_inspecao','Tipo da Últ. Inspeção','select',{options:['Interna','Externa','Interna + Externa','Não inspecionado']})}
+    </div>
+    ${toggle('ja_inspecionado','Já foi inspecionado anteriormente?')}`;
+}
+
+// ── SEÇÃO C: DIMENSÕES ──
+function renderDimensoes(t) {
+  if (t === 'vaso') return `
+    <div class="warn-box">Preencha as dimensões conforme placa ou prontuário do equipamento.</div>
+    <div class="field-row2">
+      ${campo('diametro','Diâmetro Interno (mm)','number',{placeholder:'Ex: 600'})}
+      ${campo('comprimento','Comprimento / Altura (mm)','number',{placeholder:'Ex: 2000'})}
+    </div>
+    ${campo('volume','Volume (litros)','number',{placeholder:'Ex: 500'})}
+    ${campo('espessura_parede','Espessura de Parede (mm)','number',{placeholder:'Ex: 10'})}
+    ${campo('material_casco','Material do Casco','text',{placeholder:'Ex: Aço carbono ASTM A516 Gr.70'})}`;
+  if (t === 'caldeira') return `
+    <div class="field-row2">
+      ${campo('capacidade_vapor','Capacidade de Produção (kg/h)','number',{placeholder:'Ex: 500'})}
+      ${campo('area_aquecimento','Área de Superfície de Aquecimento (m²)','number',{placeholder:'Ex: 40'})}
+    </div>
+    ${campo('combustivel','Combustível','select',{options:['GLP','GN (gás natural)','Óleo BPF','Lenha/Biomassa','Elétrico','Outro']})}
+    ${campo('pressao_projeto','Pressão de Projeto (kgf/cm²)','number',{placeholder:'Ex: 12'})}
+    ${campo('material_casco','Material do Casco','text',{placeholder:'Ex: Aço carbono'})}`;
+  if (t === 'tubulacao') return `
+    ${campo('bitola','Bitola Nominal','select',{options:['1/2"','3/4"','1"','1.1/4"','1.1/2"','2"','2.1/2"','3"','4"','6"','8"','10"','12"','Outro']})}
+    ${campo('bitola_outro','Bitola (manual)','text',{placeholder:'Se não listada acima'})}
+    <div class="field-row2">
+      ${campo('comprimento_m','Comprimento (m)','number',{placeholder:'Ex: 45'})}
+      ${campo('espessura_parede','Espessura de Parede (mm)','number',{placeholder:'Ex: 3,9'})}
+    </div>
+    ${campo('material','Material','select',{options:['Aço carbono API 5L','Aço inox 304','Aço inox 316','Cobre','Latão','CPVC','Outro']})}
+    ${campo('classe_pressao','Classe de Pressão (ANSI/ASME)','select',{options:['150#','300#','600#','900#','1500#','2500#','N/A']})}
+    ${campo('isolamento','Isolamento Térmico','select',{options:['Sim — bom estado','Sim — deteriorado','Não possui','N/A']})}`;
+  if (t === 'tanque') return `
+    <div class="field-row2">
+      ${campo('diametro','Diâmetro (m)','number',{placeholder:'Ex: 4,5'})}
+      ${campo('altura','Altura (m)','number',{placeholder:'Ex: 6'})}
+    </div>
+    ${campo('volume','Volume Nominal (m³)','number',{placeholder:'Ex: 95'})}
+    ${campo('teto','Tipo de Teto','select',{options:['Fixo cônico','Fixo abaulado','Flutuante externo','Flutuante interno','Aberto (sem teto)','Outro']})}
+    ${campo('material','Material','select',{options:['Aço carbono','Aço inox 304','Aço inox 316','Fibra de vidro (GRP)','Outro']})}
+    ${campo('revestimento','Revestimento / Pintura','select',{options:['Epóxi interno','Borracha (borrachamento)','Sem revestimento','Deteriorado','Outro']})}`;
+  return '<div class="info-box">Nenhuma dimensão específica para este tipo.</div>';
+}
+
+// ── SEÇÃO D: DISPOSITIVOS DE SEGURANÇA ──
+function renderDispositivos(t) {
+  return `
+    <p class="sec-label">Manômetro</p>
+    ${toggle('possui_manometro','Possui manômetro?',['Sim','Não'])}
+    ${toggle('manometro_calibrado','Manômetro calibrado?',['Sim','Não','N/A'])}
+    ${campo('cert_manometro','Nº Certificado Calibração (Manômetro)','text',{placeholder:'CAL-2026-001'})}
+    ${campo('venc_manometro','Vencimento Calibração','date',{})}
+
+    <p class="sec-label">Válvula de Segurança (PSV)</p>
+    ${toggle('possui_valvula','Possui válvula de segurança?',['Sim','Não'])}
+    ${toggle('valvula_calibrada','PSV calibrada?',['Sim','Não','N/A'])}
+    ${campo('cert_valvula','Nº Certificado Calibração (PSV)','text',{placeholder:'CAL-2026-002'})}
+    ${campo('venc_valvula','Vencimento Calibração','date',{})}
+    ${campo('pa_valvula','Pressão de Abertura da PSV (kgf/cm²)','number',{placeholder:'Ex: 11'})}
+
+    <p class="sec-label">Outros Dispositivos</p>
+    ${toggle('possui_purgador','Possui purgador?',['Sim','Não','N/A'])}
+    ${toggle('possui_dcbi','Possui DCBI?',['Sim','Não','N/A'])}
+    ${toggle('possui_valvula_retencao','Possui válvula de retenção?',['Sim','Não','N/A'])}
+    ${t==='caldeira' ? toggle('possui_indicador_nivel','Possui indicador de nível?',['Sim','Não']) : ''}
+    ${t==='caldeira' ? toggle('possui_pressostato','Possui pressostato de segurança?',['Sim','Não']) : ''}`;
+}
+
+// ── SEÇÃO E: DOCUMENTAÇÃO ──
+function renderDocumentacao(t) {
+  const docsTipo = {
+    vaso:['Prontuário do vaso (fabricante)','Registro de segurança','Relatórios de inspeção anteriores','Projeto de Alteração e Reparo (PAR)','Certificado de calibração PSV','Certificado de calibração manômetro','Projeto de instalação'],
+    caldeira:['Prontuário da caldeira (fabricante)','Registro de segurança','Relatórios de inspeção anteriores','Projeto de Alteração e Reparo (PAR)','Certificado de calibração PSV','Certificado de calibração manômetro','Projeto de instalação','Licença de operação'],
+    tubulacao:['Folhas de dados / isométrico','Registro de segurança','Relatórios de inspeção anteriores','Projeto de Alteração e Reparo (PAR)','Certificado de testes'],
+    tanque:['Folhas de dados','Registro de segurança','Relatórios de inspeção anteriores','Projeto de Alteração e Reparo (PAR)','Certificados de inspeção e testes'],
+  };
+  const docs = docsTipo[t] || docsTipo.vaso;
+  return `
+    <div class="info-box">Marque os documentos presentes na empresa no momento do levantamento.</div>
+    ${checkList('doc', 'Documentos presentes', docs)}
+    ${campo('obs_docs','Observações sobre documentação','textarea',{placeholder:'Prontuário incompleto, RS desatualizado…'})}`;
+}
+
+// ── SEÇÃO F: CONDIÇÕES DE SERVIÇO ──
+function renderServico(t) {
+  const ends = ['Líquido Penetrante (LP)','Ultrassom (UT)','Partículas Magnéticas (PM)','Radiografia (RT)','TOFD','Phased Array (PA)','Hardness Test'];
+  return `
+    ${toggle('trabalho_altura','Requer trabalho em altura para inspeção?',['Sim','Não'])}
+    ${toggle('necessita_th','Necessita Teste Hidrostático?',['Sim','Não','Já realizado'])}
+    ${toggle('espaco_confinado','Acesso por espaço confinado?',['Sim','Não'])}
+    ${toggle('necessita_scaffold','Necessita andaime para acesso?',['Sim','Não'])}
+    ${checkList('end','Ensaios Não Destrutivos necessários',ends)}
+    ${campo('processo','Informações do Processo (para inspeção)','textarea',{placeholder:'Temperatura, pressão de operação atual, ciclos de operação, histórico de falhas…'})}
+    ${campo('risco_observado','Riscos Observados','textarea',{placeholder:'Corrosão externa, vazamentos, deformações…'})}`;
+}
+
+// ── SEÇÃO G: OBSERVAÇÕES E FOTO ──
+// Retorna as definições de fotos para cada tipo de equipamento
+function getFotosDefs(t) {
+  // Fotos comuns a todos os tipos
+  const comuns = [
+    { key:'foto_local',   defaultLabel:'Foto do Local / Equipamento' },
+    { key:'foto_placa',   defaultLabel:'Foto da Placa de Identificação' },
+    { key:'foto_psv',     defaultLabel:'Foto da Válvula de Segurança ou Válvula de Alívio' },
+    { key:'foto_manometro', defaultLabel:'Foto do Manômetro ou Instrumento de Pressão' },
+    { key:'foto_docs',    defaultLabel:'Fotos dos Documentos Existentes' },
+    { key:'foto_ambiente',defaultLabel:'Foto Geral do Ambiente de Instalação' },
+  ];
+  // Fotos específicas por tipo
+  const extras = {
+    caldeira: [
+      { key:'foto_abastec_emerg', defaultLabel:'Foto do Sistema de Abastecimento de Emergência' },
+      { key:'foto_indicador_nivel', defaultLabel:'Foto do Indicador de Nível' },
+      { key:'foto_seg_adicionais', defaultLabel:'Foto de Sistemas de Segurança Adicionais' },
+      { key:'foto_descarga_fundo', defaultLabel:'Foto da Descarga de Fundo' },
+      { key:'foto_ambiente_cal',   defaultLabel:'Foto do Ambiente onde está Instalada' },
+      { key:'foto_combate_inc',    defaultLabel:'Foto dos Sistemas de Combate a Incêndio Instalados' },
+    ],
+    tanque: [
+      { key:'foto_quebra_vacuo',   defaultLabel:'Foto da Válvula Quebra-Vácuo' },
+    ],
+    tubulacao: [
+      { key:'foto_geral_tub',      defaultLabel:'Foto Geral da Tubulação' },
+      { key:'foto_ponto_alto',     defaultLabel:'Foto do Ponto Mais Alto da Tubulação' },
+    ],
+  };
+  return [...comuns, ...(extras[t] || [])];
+}
+
+function renderFotoBlock(def) {
+  const key = def.key;
+  const labelKey = key + '_label';
+  const currentLabel = SES.fotos[labelKey] || def.defaultLabel;
+  const foto = SES.fotos[key];
+  return `
+    <div style="margin-bottom:16px;background:var(--surf);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+      <div style="padding:10px 14px 6px">
+        <label style="display:block;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:4px">Legenda da Foto</label>
+        <input type="text" id="lbl_${key}" value="${currentLabel.replace(/"/g,'&quot;')}"
+          style="width:100%;background:var(--surf2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--text);font-family:var(--body)"
+          oninput="SES.fotos['${labelKey}']=this.value;markDirty()"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="padding:0 14px 12px">
+        ${foto && foto.dataUrl
+          ? `<img src="${foto.dataUrl}" class="photo-thumb" style="margin-bottom:6px"><span class="photo-clear" onclick="clearFoto('${key}')">✕ Remover foto</span>`
+          : `<div style="display:flex;gap:8px"><button type="button" class="btn btn-ghost btn-sm" onclick="preparePhoto('${key}','obs','${key}','camera')">📷 Câmera</button><button type="button" class="btn btn-ghost btn-sm" onclick="preparePhoto('${key}','obs','${key}','galeria')">🖼️ Galeria</button></div>`
+        }
+      </div>
+    </div>`;
+}
+
+function renderObs(t) {
+  // Pergunta extra para tubulação
+  const tubExtra = t === 'tubulacao' ? `
+    <p class="sec-label" style="margin-top:4px">Documentação de Tubulação</p>
+    ${toggle('possui_desenho_tub','Existe desenho / isométrico da tubulação?',['Sim','Não','Parcial'])}
+    ${campo('obs_desenho_tub','Observações sobre o desenho','textarea',{placeholder:'Localização do desenho, revisão atual, pendências…'})}` : '';
+
+  const defs = getFotosDefs(t);
+  const fotosHtml = defs.map(d => renderFotoBlock(d)).join('');
+
+  return `
+    ${campo('obs_gerais','Observações Gerais','textarea',{placeholder:'Condição geral, anomalias, recomendações…'})}
+    ${campo('obs_inspetor','Recomendações do Inspetor','textarea',{placeholder:'Ações imediatas, próxima inspeção…'})}
+    ${tubExtra}
+    <p class="sec-label" style="margin-top:8px">Registro Fotográfico</p>
+    <div class="info-box" style="margin-bottom:12px">As legendas são editáveis. Toque no campo de texto acima de cada foto para personalizar.</div>
+    ${fotosHtml}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FOTO
+// ═══════════════════════════════════════════════════════════════
+let _photoTarget = null;
+
+function preparePhoto(key, secao, campo_ref, origem) {
+  _photoTarget = key;
+  const fi = document.getElementById(origem === 'camera' ? 'fileInputCamera' : 'fileInputGallery');
+  fi.value = '';
+  fi.onchange = null;
+  fi.onchange = function() {
+    const file = fi.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const img = new Image();
+      img.onload = function() {
+        const MAX = FOTO_MAX_SIZE;
+        let w = img.width, h = img.height;
+        if (w > MAX) { h = h * MAX / w; w = MAX; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', FOTO_JPEG_QUALITY);
+        SES.fotos[_photoTarget] = { dataUrl, w, h, secao, campo_ref, origem, created_at: new Date().toISOString(), key: _photoTarget };
+        markDirty();
+        // Re-renderiza seção atual para mostrar thumb
+        const body = document.getElementById('t5-body');
+        body.innerHTML = renderSecao(SECS[SES.secAtual].id);
+        restaurarCampos(SECS[SES.secAtual].id);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+}
+
+function clearFoto(campo) {
+  markDirty();
+  delete SES.fotos[campo];
+  const body = document.getElementById('t5-body');
+  body.innerHTML = renderSecao(SECS[SES.secAtual].id);
+  restaurarCampos(SECS[SES.secAtual].id);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SALVAR / RESTAURAR CAMPOS
+// ═══════════════════════════════════════════════════════════════
+function salvarCampos(secId) {
+  document.querySelectorAll('#t5-body [id^="f_"]').forEach(el => {
+    const key = el.id.replace('f_','');
+    SES.dados[key] = el.value;
+  });
+  // Salvar legendas de fotos (inputs com id lbl_*)
+  document.querySelectorAll('#t5-body [id^="lbl_"]').forEach(el => {
+    const key = el.id.replace('lbl_','') + '_label';
+    SES.fotos[key] = el.value;
+  });
+  // Toggles já salvos em setToggle
+  // Checks já salvos em toggleCheck
+  SES.dados.possui_foto = Object.keys(SES.fotos).filter(k=>!k.endsWith('_label')).length > 0;
+}
+
+function restaurarCampos(secId) {
+  document.querySelectorAll('#t5-body [id^="f_"]').forEach(el => {
+    const key = el.id.replace('f_','');
+    if (SES.dados[key] !== undefined) el.value = SES.dados[key];
+  });
+  // Restaurar toggles
+  document.querySelectorAll('#t5-body .toggle-row').forEach(row => {
+    const opts = row.querySelectorAll('.toggle-opt');
+    opts.forEach(opt => {
+      const id = opt.dataset.id;
+      const val = opt.dataset.val;
+      if (id && SES.dados[id] === val) {
+        const cls = opt.getAttribute('onclick').match(/sel-\w+/)?.[0] || 'sel-ok';
+        opt.classList.add(cls);
+      }
+    });
+  });
+  // Restaurar checks
+  if (SES.dados._checks) {
+    Object.entries(SES.dados._checks).forEach(([id, checked]) => {
+      const ci = document.getElementById('ci_'+id);
+      const cb = document.getElementById('cb_'+id);
+      if (ci && cb) {
+        if (checked) ci.classList.add('checked');
+        else ci.classList.remove('checked');
+      }
+    });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// T6 — REVISÃO
+// ═══════════════════════════════════════════════════════════════
+function renderT6() {
+  salvarCampos(SECS[SES.secAtual].id);
+  const d = SES.dados;
+  document.getElementById('t6-tag').textContent = d.tag || 'Sem TAG';
+  document.getElementById('t6-tipo').textContent = labelTipo(d.tipo);
+
+  const rv = (label, val) => val
+    ? `<div class="rev-row"><span class="rev-label">${label}</span><span class="rev-value">${val}</span></div>`
+    : '';
+
+  const checkedDocs = Object.entries(d._checks || {}).filter(([,v])=>v).map(([k])=>k.replace(/doc_/,'').replace(/_/g,' ')).join(', ');
+
+  let fotos_html = '';
+  Object.keys(SES.fotos).forEach(f => {
+    fotos_html += `<img src="${SES.fotos[f].dataUrl}" style="width:48%;border-radius:8px;margin:2px">`;
+  });
+
+  document.getElementById('t6-body').innerHTML = `
+    <div class="rev-card">
+      <div class="rev-head"><span class="rev-head-tag">${d.tag || '—'}</span><span class="rev-head-tipo">${labelTipo(d.tipo)}</span></div>
+      ${rv('Fabricante', d.fabricante)}
+      ${rv('Nº Equipamento', d.numero_equip)}
+      ${rv('Ano Fabricação', d.ano_fabricacao)}
+      ${rv('Categoria', d.categoria)}
+      ${rv('Código de Projeto', d.codigo_projeto)}
+      ${rv('Localização', d.localizacao)}
+      ${rv('Placa Indelével', d.placa_indelevel)}
+      ${rv('PMTA (kgf/cm²)', d.pmta)}
+      ${rv('Pressão Trabalho', d.pressao_trabalho)}
+      ${rv('Fluido', d.fluido || d.fluido_outro)}
+      ${rv('Classe Fluido', d.classe_fluido)}
+      ${rv('Pressão Teste Hidrostático', d.pressao_teste)}
+      ${d.volume ? rv('Volume', d.volume + (SES.tipoEquip==='tanque'?' m³':' litros')) : ''}
+      ${rv('Manômetro', d.possui_manometro)}
+      ${rv('Manômetro calibrado', d.manometro_calibrado)}
+      ${rv('PSV', d.possui_valvula)}
+      ${rv('PSV calibrada', d.valvula_calibrada)}
+      ${rv('Purgador', d.possui_purgador)}
+      ${rv('DCBI', d.possui_dcbi)}
+      ${rv('Documentos presentes', checkedDocs || '—')}
+      ${rv('Trabalho em altura', d.trabalho_altura)}
+      ${rv('Necessita TH', d.necessita_th)}
+      ${rv('Observações', d.obs_gerais)}
+    </div>
+    ${fotos_html ? '<p class="sec-label">Fotos</p><div style="display:flex;flex-wrap:wrap;gap:4px">' + fotos_html + '</div>' : ''}`;
+  goTo('t6');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SALVAR EQUIPAMENTO
+// ═══════════════════════════════════════════════════════════════
+function salvarEquipamento() {
+  const equip = { ...SES.dados, _fotos: SES.fotos, _salvo: true, _ts: Date.now() };
+  if (SES.equipEdit !== null) {
+    SES.equipamentos[SES.equipEdit] = equip;
+  } else {
+    SES.equipamentos.push(equip);
+  }
+  // Persiste no localStorage
+  const chave = 'colect_equip_' + SES.os.id_os;
+  localStorage.setItem(chave, JSON.stringify(SES.equipamentos));
+  showToast('✓ Equipamento salvo localmente');
+  renderT3();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// T-EXPORT
+// ═══════════════════════════════════════════════════════════════
+function renderExport() {
+  document.getElementById('exp-os-label').textContent = SES.os ? SES.os.numero_os + ' · ' + SES.os.cliente : '—';
+  const total = SES.equipamentos.length;
+  const feitos = SES.equipamentos.filter(e => e._salvo).length;
+  document.getElementById('exp-summary').textContent = `${feitos} equipamento(s) preenchido(s) de ${total} nesta OS.`;
+  const list = document.getElementById('exp-equip-list');
+  list.innerHTML = SES.equipamentos.map((eq, idx) => {
+    const tag = eq.tag || eq.numero_equip || ('EQ-' + (idx+1));
+    return `<div class="equip-card" onclick="gerarPDFUnico(${idx})">
+      <div class="ec-tag">${tag}</div>
+      <div class="ec-tipo">${labelTipo(eq.tipo)}${eq.fabricante?' · '+eq.fabricante:''}</div>
+      <div class="ec-status"><span class="pill pill-pdf">📄 Gerar PDF Individual</span></div>
+    </div>`;
+  }).join('') || '<div class="empty-state"><div class="ei">📋</div>Nenhum equipamento</div>';
+  goTo('t-export');
+}
+
+function openExportScreen() {
+  autosaveDraft('before_export');
+  renderExport();
+  const prev = document.getElementById('scr-' + currentScreen);
+  const next = document.getElementById('scr-t-export');
+  if (prev) prev.classList.add('out');
+  setTimeout(() => {
+    if (prev) { prev.classList.add('hidden'); prev.classList.remove('out'); }
+    next.classList.remove('hidden');
+    currentScreen = 't-export';
+  }, 220);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PDF — ENGINE (adaptado do PCF)
+// ═══════════════════════════════════════════════════════════════
+function limparTxtPDF(txt) {
+  if (!txt) return '';
+  return String(txt)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .trim();
+}
+
+function gerarPDFUnico(idx) {
+  gerarPDFEquips([idx], false);
+}
+
+function gerarPDFEquip(modo) {
+  if (!SES.equipamentos.length) { showToast('Nenhum equipamento para gerar PDF','err'); return; }
+  if (modo === 'individual') {
+    // Gera PDF de cada um separadamente
+    SES.equipamentos.forEach((_, idx) => gerarPDFEquips([idx], false));
+  } else {
+    gerarPDFEquips(SES.equipamentos.map((_,i)=>i), true);
+  }
+}
+
+async function gerarPDFEquips(indices, completo) {
+  if (!window.jspdf) { showToast('Lib PDF não carregada','err'); return; }
+  const {jsPDF} = window.jspdf;
+  showLoading('Gerando PDF…');
+  await new Promise(r => setTimeout(r, 80));
+
+  const doc = new jsPDF({orientation:'portrait', unit:'mm', format:'a4'});
+  const PW=210, PH=297, ML=14, MR=14;
+  const CW = PW-ML-MR;
+
+  const AZUL   = [26,58,107];
+  const AZUL2  = [46,91,168];
+  const LARANJA= [14,165,233]; // usa accent do ColectTap
+  const DARK   = [30,40,55];
+  const LGRAY  = [240,244,250];
+  const MGRAY  = [200,210,225];
+  const GREEN  = [34,197,94];
+  const WHITE  = [255,255,255];
+  const RED    = [239,68,68];
+
+  let pageNum = 1;
+  const agora = new Date();
+  const dataHoje = agora.toLocaleDateString('pt-BR') + ' ' + agora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+
+  function hdr(isFirst) {
+    doc.setFillColor(...AZUL);
+    doc.rect(0,0,PW,isFirst?32:18,'F');
+    doc.setFillColor(...LARANJA);
+    doc.rect(0,isFirst?30:16,PW,2,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(isFirst?13:9);
+    doc.setTextColor(...WHITE);
+    if (isFirst) {
+      doc.text('ENGETAP ENGENHARIA LTDA', ML, 10);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8);
+      doc.setTextColor(180,205,235);
+      doc.text('CREA-MG 64.569  |  Inspeções NR-13  |  Divinópolis-MG', ML, 16);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(11);
+      doc.setTextColor(...WHITE);
+      doc.text(limparTxtPDF('LEVANTAMENTO DE EQUIPAMENTOS NR-13'), PW-MR, 10, {align:'right'});
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8);
+      doc.setTextColor(180,205,235);
+      doc.text(limparTxtPDF('ColectTap v1.1  |  ' + dataHoje), PW-MR, 16, {align:'right'});
+    } else {
+      doc.text('ENGETAP · LEVANTAMENTO NR-13', ML, 11);
+      doc.text('Pag. '+pageNum, PW-MR, 11, {align:'right'});
+    }
+  }
+
+  function ftr() {
+    const y = PH-8;
+    doc.setFillColor(...LGRAY);
+    doc.rect(0,PH-12,PW,12,'F');
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(7);
+    doc.setTextColor(100,120,150);
+    const os = SES.os ? SES.os.numero_os + ' · ' + SES.os.cliente : '';
+    doc.text(limparTxtPDF('Engetap Engenharia Ltda · CREA-MG 64.569 · ' + os), ML, y);
+    doc.text('Pag. '+pageNum, PW-MR, y, {align:'right'});
+  }
+
+  function newPage() {
+    ftr();
+    doc.addPage();
+    pageNum++;
+    hdr(false);
+    return 22;
+  }
+
+  function ck(y, need) {
+    return (y+need > PH-16) ? newPage() : y;
+  }
+
+  function secTit(y, icon, title, cor) {
+    const c = cor || AZUL;
+    y = ck(y, 10);
+    doc.setFillColor(...c);
+    doc.rect(ML,y,CW,8,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...WHITE);
+    doc.text(limparTxtPDF(icon + ' ' + title.toUpperCase()), ML+3, y+5.5);
+    return y+10;
+  }
+
+  function row1(y, label, val, alt) {
+    const rh=6.5;
+    y=ck(y,rh);
+    if (alt){doc.setFillColor(247,250,255);doc.rect(ML,y,CW,rh,'F');}
+    doc.setDrawColor(...MGRAY);doc.setLineWidth(0.2);
+    doc.rect(ML,y,CW,rh,'S');
+    doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(...AZUL2);
+    doc.text(limparTxtPDF(label),ML+2,y+4.5);
+    doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+    const v=val&&val!=='—'?String(val):'—';
+    doc.text(limparTxtPDF(v),ML+58,y+4.5);
+    return y+rh;
+  }
+
+  function row2(y, items) {
+    const rh=6.5;
+    y=ck(y,rh);
+    const cw2=CW/2;
+    items.forEach((item,i)=>{
+      const x=ML+i*cw2;
+      doc.setFillColor(i%2===0?247:252,250,255);
+      doc.rect(x,y,cw2,rh,'F');
+      doc.setDrawColor(...MGRAY);doc.setLineWidth(0.2);
+      doc.rect(x,y,cw2,rh,'S');
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...AZUL2);
+      doc.text(limparTxtPDF(item.l||''),x+2,y+4.5);
+      doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+      const v=(item.v&&item.v!=='—')?String(item.v):'—';
+      doc.text(limparTxtPDF(v),x+cw2*0.45,y+4.5);
+    });
+    return y+rh;
+  }
+
+  function badge(y, label, ok) {
+    const rh=7;
+    y=ck(y,rh);
+    const cor = ok==='Sim'?GREEN:ok==='Não'?RED:[150,150,170];
+    doc.setFillColor(...cor,30);
+    doc.rect(ML,y,CW/2-2,rh,'F');
+    doc.setDrawColor(...cor);doc.setLineWidth(0.3);
+    doc.rect(ML,y,CW/2-2,rh,'S');
+    doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(...cor);
+    doc.text(limparTxtPDF(label+': '+ok),ML+3,y+4.8);
+    return y+rh+1;
+  }
+
+  // ── LOOP POR EQUIPAMENTO ──
+  for (let ii=0; ii<indices.length; ii++) {
+    if (ii>0) newPage();
+    const eq = SES.equipamentos[indices[ii]];
+    const d = eq;
+    const tag = d.tag || d.numero_equip || ('EQ-'+(indices[ii]+1));
+    const tipo = labelTipo(d.tipo);
+
+    hdr(ii===0);
+    let y = ii===0 ? 36 : 22;
+
+    // Cabeçalho do equipamento
+    doc.setFillColor(...LARANJA,0.15);
+    doc.setFillColor(14,165,233);
+    doc.rect(ML,y,CW,10,'F');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...WHITE);
+    doc.text(limparTxtPDF(tag + '  ·  ' + tipo.toUpperCase()), ML+4, y+7);
+    y+=13;
+
+    // OS / Cliente
+    y=ck(y,8);
+    doc.setFillColor(...LGRAY);
+    doc.rect(ML,y,CW,7,'F');
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...DARK);
+    const osLbl = SES.os ? 'OS: ' + SES.os.numero_os + '  |  Cliente: ' + SES.os.cliente + '  |  Inspetor: ' + (SES.inspetor?.nome||'—') : '';
+    doc.text(limparTxtPDF(osLbl), ML+3, y+5);
+    y+=9;
+
+    // A — IDENTIFICAÇÃO
+    y = secTit(y,'A','Identificacao');
+    y = row2(y,[{l:'TAG',v:d.tag},{l:'Fabricante',v:d.fabricante}]);
+    y = row2(y,[{l:'N° Equipamento',v:d.numero_equip},{l:'Ano de Fabricacao',v:d.ano_fabricacao}]);
+    y = row2(y,[{l:'Categoria NR-13',v:d.categoria},{l:'Codigo de Projeto',v:d.codigo_projeto}]);
+    y = row1(y,'Localizacao na Planta',d.localizacao,false);
+    y = row2(y,[{l:'Placa Indelevel',v:d.placa_indelevel},{l:'Necessita Ident.TAG/Cat.',v:d.necessita_tag}]);
+    y+=2;
+
+    // B — PROJETO
+    y = secTit(y,'B','Dados de Projeto');
+    y = row2(y,[{l:'PMTA (kgf/cm2)',v:d.pmta},{l:'Pressao de Trabalho (kgf/cm2)',v:d.pressao_trabalho}]);
+    y = row2(y,[{l:'Pressao de Teste Hidro. (kgf/cm2)',v:d.pressao_teste},{l:'Temperatura de Operacao (oC)',v:d.temperatura}]);
+    y = row1(y,'Fluido de Trabalho', d.fluido==='Outro' ? d.fluido_outro : d.fluido, false);
+    y = row2(y,[{l:'Classe do Fluido',v:d.classe_fluido},{l:'Ja Inspecionado',v:d.ja_inspecionado}]);
+    y = row2(y,[{l:'Ano Ultima Inspecao',v:d.ano_ultima_inspecao},{l:'Tipo Ultima Inspecao',v:d.tipo_ultima_inspecao}]);
+    y+=2;
+
+    // C — DIMENSÕES
+    y = secTit(y,'C','Dimensoes / Dados Construtivos');
+    if (d.tipo==='vaso') {
+      y = row2(y,[{l:'Diametro Interno (mm)',v:d.diametro},{l:'Comprimento/Altura (mm)',v:d.comprimento}]);
+      y = row2(y,[{l:'Volume (litros)',v:d.volume},{l:'Espessura de Parede (mm)',v:d.espessura_parede}]);
+      y = row1(y,'Material do Casco',d.material_casco,true);
+    } else if (d.tipo==='caldeira') {
+      y = row2(y,[{l:'Capacidade Vapor (kg/h)',v:d.capacidade_vapor},{l:'Area Superf. Aquecimento (m2)',v:d.area_aquecimento}]);
+      y = row2(y,[{l:'Combustivel',v:d.combustivel},{l:'Pressao de Projeto (kgf/cm2)',v:d.pressao_projeto}]);
+      y = row1(y,'Material do Casco',d.material_casco,true);
+    } else if (d.tipo==='tubulacao') {
+      y = row2(y,[{l:'Bitola Nominal',v:d.bitola==='Outro'?d.bitola_outro:d.bitola},{l:'Comprimento (m)',v:d.comprimento_m}]);
+      y = row2(y,[{l:'Espessura de Parede (mm)',v:d.espessura_parede},{l:'Classe de Pressao (ANSI/ASME)',v:d.classe_pressao}]);
+      y = row2(y,[{l:'Material',v:d.material},{l:'Isolamento Termico',v:d.isolamento}]);
+    } else if (d.tipo==='tanque') {
+      y = row2(y,[{l:'Diametro (m)',v:d.diametro},{l:'Altura (m)',v:d.altura}]);
+      y = row2(y,[{l:'Volume (m3)',v:d.volume},{l:'Tipo de Teto',v:d.teto}]);
+      y = row2(y,[{l:'Material',v:d.material},{l:'Revestimento',v:d.revestimento}]);
+    }
+    y+=2;
+
+    // D — DISPOSITIVOS
+    y = secTit(y,'D','Dispositivos de Seguranca');
+    y = row2(y,[{l:'Possui manometro',v:d.possui_manometro},{l:'Manometro calibrado',v:d.manometro_calibrado}]);
+    if (d.possui_manometro==='Sim') {
+      y = row2(y,[{l:'N° Cert. Calib. Manometro',v:d.cert_manometro},{l:'Vencimento Calibracao',v:d.venc_manometro}]);
+    }
+    y = row2(y,[{l:'Possui PSV (valvula seguranca)',v:d.possui_valvula},{l:'PSV calibrada',v:d.valvula_calibrada}]);
+    if (d.possui_valvula==='Sim') {
+      y = row2(y,[{l:'N° Cert. Calib. PSV',v:d.cert_valvula},{l:'PA da PSV (kgf/cm2)',v:d.pa_valvula}]);
+      y = row1(y,'Vencimento Calibracao PSV',d.venc_valvula,true);
+    }
+    y = row2(y,[{l:'Possui purgador',v:d.possui_purgador},{l:'Possui DCBI',v:d.possui_dcbi}]);
+    y+=2;
+
+    // E — DOCUMENTAÇÃO
+    y = secTit(y,'E','Documentacao');
+    const checks = d._checks || {};
+    const docsPresentes = Object.entries(checks).filter(([,v])=>v).map(([k])=>
+      k.replace('doc_','').replace(/_/g,' ')
+    );
+    const docsAusentes = Object.entries(checks).filter(([,v])=>!v).map(([k])=>
+      k.replace('doc_','').replace(/_/g,' ')
+    );
+    if (docsPresentes.length) {
+      y=ck(y,8);
+      doc.setFillColor(240,255,245);
+      doc.rect(ML,y,CW,7,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(22,101,52);
+      doc.text('Presentes:', ML+2,y+5);
+      doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+      const dp = doc.splitTextToSize(limparTxtPDF(docsPresentes.join('  |  ')),CW-25);
+      doc.text(dp,ML+22,y+5);
+      y+=Math.max(7,dp.length*4.5+2);
+    }
+    if (docsAusentes.length) {
+      y=ck(y,8);
+      doc.setFillColor(255,240,240);
+      doc.rect(ML,y,CW,7,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(153,27,27);
+      doc.text('Ausentes:', ML+2,y+5);
+      doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+      const da = doc.splitTextToSize(limparTxtPDF(docsAusentes.join('  |  ')),CW-25);
+      doc.text(da,ML+22,y+5);
+      y+=Math.max(7,da.length*4.5+2);
+    }
+    if (d.obs_docs) {
+      y=ck(y,8);
+      doc.setFillColor(...LGRAY);doc.rect(ML,y,CW,7,'F');
+      doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(80,90,110);
+      const l=doc.splitTextToSize(limparTxtPDF('Obs: '+d.obs_docs),CW-4);
+      doc.text(l,ML+2,y+4.5);
+      y+=Math.max(7,l.length*4+2);
+    }
+    y+=2;
+
+    // F — CONDIÇÕES DE SERVIÇO
+    y = secTit(y,'F','Condicoes de Servico');
+    y = row2(y,[{l:'Trabalho em altura',v:d.trabalho_altura},{l:'Necessita TH',v:d.necessita_th}]);
+    y = row2(y,[{l:'Espaco confinado',v:d.espaco_confinado},{l:'Necessita andaime',v:d.necessita_scaffold}]);
+    const endsChecks = Object.entries(d._checks||{}).filter(([k,v])=>!k.startsWith('doc_')&&v).map(([k])=>k.replace(/_/g,' '));
+    if (endsChecks.length) {
+      y=ck(y,8);
+      doc.setFillColor(255,247,230);doc.rect(ML,y,CW,7,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7.5);doc.setTextColor(120,60,0);
+      doc.text('END necessarios:',ML+2,y+5);
+      doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+      const el=doc.splitTextToSize(limparTxtPDF(endsChecks.join('  |  ')),CW-32);
+      doc.text(el,ML+34,y+5);
+      y+=Math.max(7,el.length*4+2);
+    }
+    if (d.processo) {
+      y=ck(y,10);
+      doc.setFillColor(...LGRAY);doc.rect(ML,y,CW,8,'F');
+      doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...AZUL2);
+      doc.text('Informacoes do Processo:',ML+2,y+4.5);
+      doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+      const pl=doc.splitTextToSize(limparTxtPDF(d.processo),CW-4);
+      doc.text(pl,ML+2,y+8.5);
+      y+=Math.max(8,pl.length*4+6);
+    }
+    y+=2;
+
+    // G — OBSERVAÇÕES
+    if (d.obs_gerais || d.obs_inspetor || d.risco_observado) {
+      y = secTit(y,'G','Observacoes e Recomendacoes');
+      if (d.obs_gerais) {
+        y=ck(y,10);
+        doc.setFillColor(...LGRAY);doc.rect(ML,y,CW,8,'F');
+        doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...AZUL2);
+        doc.text('Observacoes Gerais:',ML+2,y+4.5);
+        doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+        const ol=doc.splitTextToSize(limparTxtPDF(d.obs_gerais),CW-4);
+        doc.text(ol,ML+2,y+9);
+        y+=Math.max(8,ol.length*4+7);
+      }
+      if (d.obs_inspetor) {
+        y=ck(y,10);
+        doc.setFillColor(240,255,245);doc.rect(ML,y,CW,8,'F');
+        doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(22,101,52);
+        doc.text('Recomendacoes do Inspetor:',ML+2,y+4.5);
+        doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+        const rl=doc.splitTextToSize(limparTxtPDF(d.obs_inspetor),CW-4);
+        doc.text(rl,ML+2,y+9);
+        y+=Math.max(8,rl.length*4+7);
+      }
+      if (d.risco_observado) {
+        y=ck(y,10);
+        doc.setFillColor(255,240,240);doc.rect(ML,y,CW,8,'F');
+        doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(153,27,27);
+        doc.text('Riscos Observados:',ML+2,y+4.5);
+        doc.setFont('helvetica','normal');doc.setTextColor(...DARK);
+        const rl=doc.splitTextToSize(limparTxtPDF(d.risco_observado),CW-4);
+        doc.text(rl,ML+2,y+9);
+        y+=Math.max(8,rl.length*4+7);
+      }
+      y+=2;
+    }
+
+    // FOTOS
+    const fotoEntries = Object.entries(eq._fotos || {}).filter(([k,f])=>f&&f.dataUrl&&!k.endsWith('_label'));
+    if (fotoEntries.length) {
+      y = newPage();
+      y = secTit(y,'📷','Registro Fotografico');
+      y+=3;
+      const COLS=2, GAP=4;
+      const PW2=(CW-GAP*(COLS-1))/COLS;
+      const MAX_H=65;
+      const CAP_H=8; // altura reservada para legenda
+      let col=0, rowY=y, rowMaxH=0;
+      for (const [key, ph] of fotoEntries) {
+        const ratio=(ph.h||600)/(ph.w||800);
+        const imgH=Math.min(MAX_H,PW2*ratio);
+        const blockH=imgH+CAP_H+4;
+        if (!rowMaxH) rowMaxH=blockH;
+        y=ck(rowY,blockH);
+        if (y!==rowY&&col!==0){col=0;rowY=y;rowMaxH=blockH;}
+        const x=ML+col*(PW2+GAP);
+        doc.setFillColor(240,245,255);doc.rect(x,y,PW2,blockH,'F');
+        doc.setDrawColor(...MGRAY);doc.setLineWidth(0.3);doc.rect(x,y,PW2,blockH,'S');
+        try{
+          let w2=PW2-2,h2=imgH-2;
+          const r2=(ph.w||800)/(ph.h||600);
+          if(w2/r2>h2){w2=h2*r2;}else{h2=w2/r2;}
+          doc.addImage(ph.dataUrl,'JPEG',x+1,y+1,w2,h2);
+        }catch(e){
+          doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(150,150,150);
+          doc.text('Erro ao carregar imagem',x+2,y+imgH/2);
+        }
+        // Legenda abaixo da foto
+        const legKey = key + '_label';
+        const legenda = eq._fotos[legKey] || key.replace('foto_','').replace(/_/g,' ');
+        doc.setFont('helvetica','italic');doc.setFontSize(6.5);doc.setTextColor(80,100,130);
+        const legTxt = limparTxtPDF(legenda);
+        const legLines = doc.splitTextToSize(legTxt, PW2-4);
+        doc.text(legLines[0], x+PW2/2, y+imgH+5, {align:'center'});
+        col++;
+        if(col>=COLS){col=0;rowY+=rowMaxH+GAP;rowMaxH=0;y=rowY;}
+      }
+      y+=3;
+    }
+
+    // Assinatura
+    y=ck(y,30);
+    y+=6;
+    doc.setDrawColor(...MGRAY);doc.setLineWidth(0.3);
+    doc.line(ML,y+14,ML+70,y+14);
+    doc.line(ML+80,y+14,ML+150,y+14);
+    doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(120,130,150);
+    doc.text(limparTxtPDF('Inspetor: '+(SES.inspetor?.nome||'_____________________')),ML,y+18);
+    doc.text('Data: ___/___/______',ML+82,y+18);
+    doc.text('CREA/CAU: ___________________',ML,y+24);
+    doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(...AZUL);
+    doc.text('Engetap Engenharia Ltda · CREA-MG 64.569',PW-MR,y+24,{align:'right'});
+
+    ftr();
+  }
+
+  const cliente = SES.os ? SES.os.cliente.replace(/[^\w\s]/g,'').substring(0,20).trim() : 'Colect';
+  const osNum = SES.os ? SES.os.numero_os.replace(/[^\w]/g,'') : '';
+  const dataStr = agora.toLocaleDateString('pt-BR').replace(/\//g,'-');
+  const suffix = indices.length===1 ? ('_'+( SES.equipamentos[indices[0]].tag || 'EQ'+(indices[0]+1) )) : '_COMPLETO';
+  const nome = `Engetap_NR13_${osNum}_${cliente}${suffix}_${dataStr}.pdf`.replace(/\s+/g,'_');
+  doc.save(nome);
+  hideLoading();
+  showToast('✅ PDF gerado: ' + nome);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORTAR CSV
+// ═══════════════════════════════════════════════════════════════
+function exportarCSV() {
+  if (!SES.equipamentos.length) { showToast('Nenhum equipamento','err'); return; }
+  const cabecalho = [
+    'OS','Cliente','TAG','Tipo','Fabricante','N_Equip','Ano_Fab','Categoria','Codigo_Projeto',
+    'Localizacao','Placa_Indelevel','PMTA','P_Trabalho','P_Teste','Temperatura','Fluido',
+    'Classe_Fluido','Volume','Diametro','Comprimento','Material','Manometro','Man_Calibrado',
+    'Cert_Man','PSV','PSV_Calibrada','Cert_PSV','PA_PSV','Purgador','DCBI',
+    'Trab_Altura','Necessita_TH','Espaco_Confinado','Obs_Gerais','Obs_Inspetor'
+  ];
+  const linhas = SES.equipamentos.map(eq => [
+    SES.os?.numero_os, SES.os?.cliente, eq.tag, labelTipo(eq.tipo), eq.fabricante,
+    eq.numero_equip, eq.ano_fabricacao, eq.categoria, eq.codigo_projeto,
+    eq.localizacao, eq.placa_indelevel, eq.pmta, eq.pressao_trabalho,
+    eq.pressao_teste, eq.temperatura, eq.fluido==='Outro'?eq.fluido_outro:eq.fluido,
+    eq.classe_fluido, eq.volume, eq.diametro, eq.comprimento||eq.comprimento_m,
+    eq.material||eq.material_casco, eq.possui_manometro, eq.manometro_calibrado,
+    eq.cert_manometro, eq.possui_valvula, eq.valvula_calibrada, eq.cert_valvula,
+    eq.pa_valvula, eq.possui_purgador, eq.possui_dcbi,
+    eq.trabalho_altura, eq.necessita_th, eq.espaco_confinado,
+    (eq.obs_gerais||'').replace(/\n/g,' '), (eq.obs_inspetor||'').replace(/\n/g,' ')
+  ].map(v => '"'+(v===undefined||v===null?'':String(v).replace(/"/g,'""'))+'"').join(','));
+
+  const csv = [cabecalho.join(','), ...linhas].join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const osN = SES.os ? SES.os.numero_os.replace(/[^\w]/g,'') : 'OS';
+  a.download = `Engetap_NR13_${osN}_${new Date().toLocaleDateString('pt-BR').replace(/\//g,'-')}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ CSV exportado!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENVIAR AO GAS
+// ═══════════════════════════════════════════════════════════════
+async function enviarGAS() {
+  if (!SES.equipamentos.length) { showToast('Nenhum equipamento','err'); return; }
+  if (DEMO_MODE) { showToast('Modo demo — GAS não configurado','warn'); return; }
+  showLoading('Enviando ao servidor…');
+  try {
+    const payload = {
+      id_os: SES.os.id_os,
+      numero_os: SES.os.numero_os,
+      id_cliente: SES.os.id_cliente,
+      cliente: SES.os.cliente,
+      id_inspetor: SES.inspetor.id_inspetor,
+      inspetor: SES.inspetor.nome,
+      app_version: APP_VERSION,
+      data_coleta: new Date().toISOString(),
+      equipamentos: SES.equipamentos.map(eq => {
+        const {_fotos, ...rest} = eq;
+        return rest; // não envia fotos para o GAS (ficam no PDF)
+      })
+    };
+    const r = await gasPost('salvarLevantamentoNR13', payload);
+    hideLoading();
+    if (r.status === 'ok') {
+      document.getElementById('tc-summary').textContent = SES.equipamentos.length + ' equipamento(s) registrado(s).';
+      document.getElementById('tc-id').textContent = r.id || 'LNR-' + Date.now();
+      showToast('✅ Dados enviados com sucesso!');
+      goTo('tc');
+    } else {
+      showToast('Erro GAS: ' + (r.mensagem || 'falha desconhecida'), 'err');
+    }
+  } catch(e) {
+    hideLoading();
+    showToast('Falha ao enviar: ' + e.message, 'err');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTOSAVE LISTENERS
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('blur', () => autosaveDraft('blur'));
+document.addEventListener('visibilitychange', () => { if (document.hidden) autosaveDraft('hidden'); });
+setInterval(() => autosaveDraft('interval'), AUTOSAVE_INTERVAL_MS);
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL PENDÊNCIA
+// ═══════════════════════════════════════════════════════════════
+const PEND_MOTIVOS = ['Informação não encontrada','Placa ilegível','Equipamento sem placa','Documento inexistente','Documento não disponibilizado pelo cliente','Acesso não permitido','Área de risco','Trabalho em altura não liberado','Espaço confinado não liberado','Não aplicável','A verificar posteriormente','Outro'];
+function abrirModalPendencia(secao, campo, label, onConfirm) {
+  document.getElementById('pend-subtitle').textContent = label || campo;
+  document.getElementById('pend-motivos').innerHTML = PEND_MOTIVOS.map((m,i)=>`<label style="display:flex;gap:8px;align-items:flex-start"><input type="radio" name="pend_motivo" value="${m.replace(/"/g,'&quot;')}" ${i===0?'checked':''}><span>${m}</span></label>`).join('');
+  document.getElementById('pend-obs').value = '';
+  document.getElementById('pend-confirm-btn').onclick = () => {
+    const motivo = (document.querySelector('input[name="pend_motivo"]:checked')||{}).value || '';
+    const obs = document.getElementById('pend-obs').value || '';
+    registrarPendencia(secao, campo, label, motivo, obs);
+    if (typeof onConfirm === 'function') onConfirm({motivo, obs});
+    closeDialog('modal-pendencia');
+  };
+  openDialog('modal-pendencia');
+}
+function registrarPendencia(secao, campo, label, motivo, obs) {
+  if (!Array.isArray(SES.pendencias)) SES.pendencias = [];
+  SES.pendencias.push({ secao, campo, label, motivo, observacao: obs, created_at: new Date().toISOString(), inspetor: SES.inspetor ? SES.inspetor.nome : '', status: 'pendente' });
+  markDirty();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  if (DEMO_MODE) {
+    setGASStatus('', 'Modo demo local');
+  } else {
+    setGASStatus('spin', 'Conectando ao GAS…');
+    gasGet('healthCheck').then(r => {
+      setGASStatus('ok', 'GAS · ' + (r.version || 'ok'));
+    }).catch(() => {
+      setGASStatus('err', 'GAS indisponível');
+    });
+  }
+});
+</script>
+</body>
+</html>
