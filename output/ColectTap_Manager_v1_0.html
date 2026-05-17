@@ -1,1 +1,13 @@
-<!doctype html><html><head><meta charset='utf-8'><title>ColectTap Manager v1.0</title></head><body><h1>ColectTap Manager v1.0</h1><p>Página inicial do manager.</p></body></html>
+<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>ColectTap Manager v1.0</title><style>body{margin:0;font-family:Arial;background:#0d1b2a;color:#e8f4ff}#app{display:flex;min-height:100vh}.sb{width:240px;background:#16283d;padding:16px;position:fixed;top:0;bottom:0}.ct{margin-left:240px;padding:20px}.menu button{display:block;width:100%;margin:6px 0;padding:10px;background:#1e3450;color:#e8f4ff;border:1px solid #2a4a6e}.hidden{display:none}table{width:100%;border-collapse:collapse}th,td{border:1px solid #2a4a6e;padding:8px}</style></head><body>
+<script>const GAS_URL_MANAGER='';let TOKEN_PIN='';const views=['Dashboard','Clientes / Leads','Técnicos','Ordens de Serviço','Coletas Recebidas','Pendências Documentais','Fotos / Drive'];
+async function api(action,p={}){const r=await fetch(GAS_URL_MANAGER,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...p,action,pin:TOKEN_PIN})});return r.json();}
+function login(){const pin=prompt('PIN'); if(pin==='9999'){TOKEN_PIN='9999'; init();return;} TOKEN_PIN=pin; init();}
+function init(){document.body.innerHTML=`<div id='app'><aside class='sb'><h2>Manager</h2><div class='menu'>${views.map((v,i)=>`<button onclick="show(${i})">${v}</button>`).join('')}</div></aside><main class='ct'>${views.map((v,i)=>`<section id='v${i}' class='${i?'hidden':''}'><h1>${v}</h1><div id='c${i}'></div></section>`).join('')}</main></div>`;loadAll();}
+function show(i){views.forEach((_,x)=>document.getElementById('v'+x).classList.toggle('hidden',x!==i));}
+async function loadAll(){document.getElementById('c0').innerHTML='Dashboard com contagens';document.getElementById('c1').innerHTML='<button onclick="salvarClienteLead()">Novo Cliente</button>';document.getElementById('c2').innerHTML='<button onclick="salvarTecnico()">Novo Técnico</button>';document.getElementById('c3').innerHTML='<button onclick="salvarOS()">Nova OS</button>';document.getElementById('c4').innerHTML='Coletas Recebidas: TAG, Tipo, Cliente, OS, Enquadramento NR13, Status Docs, Qtd Fotos, Drive, Data';document.getElementById('c5').innerHTML='Pendências documentais';document.getElementById('c6').innerHTML='Fotos / Drive';}
+async function salvarTecnico(){await api('salvarTecnico',{nome:'Novo',pin:prompt('PIN técnico')});}
+async function salvarClienteLead(){await api('salvarClienteLead',{nome:'Novo Cliente'});}
+async function salvarOS(){await api('salvarOSColect',{numero_os:'OS-'+Date.now()});}
+async function revisar(id){await api('atualizarEquipamentoRevisao',{id_equipamento_colect:id,revisao_engenharia:'ok'});} 
+</script>
+<script>login();</script></body></html>
