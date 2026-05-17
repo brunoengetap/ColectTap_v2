@@ -23,6 +23,7 @@
 // ── CONFIGURAÇÃO ──────────────────────────────────────────────────────────
 const SPREADSHEET_ID = 'COLE_AQUI_ID_DA_PLANILHA';
 const APP_VERSION    = 'ColectTap-GAS-v1.2';
+const DRIVE_LINK_PUBLICO = true;
 
 // ── CONSTANTES DE ABAS ────────────────────────────────────────────────────
 const ABA_INSPETORES  = 'INSPETORES';
@@ -65,6 +66,7 @@ function handleRequest(e) {
       case 'salvarLevantamentoNR13': result = salvarLevantamentoNR13(params);   break;
       case 'getEquipamentos':      result = getEquipamentos(params);            break;
       case 'gerarConsultaCliente': result = gerarConsultaCliente();              break;
+      case 'getTecnicos': result = getTecnicos(); break;
       default:
         result = { status:'erro', mensagem:'Ação desconhecida: ' + action };
     }
@@ -155,7 +157,7 @@ function salvarLevantamentoNR13(params) {
     'status_documentacao','documentos_presentes','documentos_ausentes','documentos_a_receber',
     'enquadra_nr13','base_enquadramento','motivo_nao_enquadramento','acao_nao_enquadramento',
     'situacao_nr13','setor','descricao_equipamento','drive_folder_id','drive_folder_url',
-    'primeira_foto_url','quantidade_fotos','fotos_json','data_criacao','data_atualizacao'
+    'primeira_foto_url','quantidade_fotos','fotos_json','upload_fotos_status','upload_fotos_erros','data_criacao','data_atualizacao'
   ]);
 
   const lock = LockService.getScriptLock();
@@ -350,7 +352,7 @@ function garantirColunas(aba, colunasNecessarias) {
 
 // === INSERIR APÓS função garantirColunas ===
 function salvarFotosDrive(idVisita, idEquip, tag, fotos) {
-  const resp = { drive_folder_id:'', drive_folder_url:'', fotos_salvas:[] };
+  const resp = { drive_folder_id:'', drive_folder_url:'', primeira_foto_url:'', quantidade_fotos:0, fotos_salvas:[], fotos_com_erro:[] };
   if (!Array.isArray(fotos) || !fotos.length) return resp;
 
   const rootName = 'PGP_Fotos';
@@ -560,3 +562,5 @@ function inicializarPlanilha() {
   garantirAbas();
   SpreadsheetApp.getUi().alert('✅ Planilha ColectTap inicializada com sucesso!\n\nAbas criadas:\n• INSPETORES\n• OS_COLECT\n• EQUIPAMENTOS_NR13\n• LOG\n\nEdite as abas para adicionar seus inspetores e OS reais.');
 }
+
+function getTecnicos(){return {status:'ok',tecnicos:[]};}

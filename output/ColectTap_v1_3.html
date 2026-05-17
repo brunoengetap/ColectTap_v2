@@ -147,8 +147,8 @@ input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none}
 
 /* TOGGLE (sim/não) */
-.toggle-row{display:flex;gap:8px;margin-bottom:14px}
-.toggle-opt{flex:1;padding:11px 6px;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);background:var(--surf);transition:all .15s}
+.toggle-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.toggle-opt{flex:1 1 calc(50% - 8px);min-width:130px;max-width:100%;padding:11px 6px;border:1px solid var(--border);border-radius:10px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--text2);background:var(--surf);transition:all .15s}
 .toggle-opt.sel-ok{background:#052e16;border-color:var(--ok);color:var(--ok)}
 .toggle-opt.sel-no{background:#450a0a;border-color:var(--danger);color:var(--danger)}
 .toggle-opt.sel-na{background:#1e1b4b;border-color:var(--pend);color:var(--pend)}
@@ -521,7 +521,7 @@ function persistCurrentEquipDraft(reason='manual') {
   };
   localStorage.setItem(chave, JSON.stringify(payload));
 }
-function autosaveDraft(reason='auto') { if (_dirty !== true) return; persistCurrentEquipDraft(reason); _dirty = false; }
+function autosaveDraft(reason='auto') { if (_dirty !== true) return; persistCurrentEquipDraft(reason); if (SES.os?.id_os) localStorage.setItem('colect_os_'+SES.os.id_os, JSON.stringify(SES.equipamentos||[])); _dirty = false; }
 function loadDraftsForOS(id_os) {
   if (!id_os) return null;
   let data = null;
@@ -788,8 +788,9 @@ function selectOS(id) {
   SES.os = SES._osList.find(o => o.id_os === id);
   if (!SES.os) return;
   // Carrega equipamentos salvos localmente para esta OS
-  const chave = 'colect_equip_' + id;
-  try { SES.equipamentos = JSON.parse(localStorage.getItem(chave) || '[]'); }
+  const chaveNova = 'colect_os_' + id;
+  const chaveLegada = 'colect_equip_' + id;
+  try { SES.equipamentos = JSON.parse(localStorage.getItem(chaveNova) || localStorage.getItem(chaveLegada) || '[]'); }
   catch { SES.equipamentos = []; }
   renderT3();
 }
@@ -950,11 +951,19 @@ function toggle(id, label, opts=['Sim','Não','N/A']) {
   return `<div class="field"><label>${label}</label><div class="toggle-row">${btns}</div></div>`;
 }
 
+const TOGGLES_REATIVOS = new Set(['status_documentacao','enquadra_nr13','possui_manometro','possui_valvula','valvula_adequada','modo_medicao_diametro']);
 function setToggle(id, val, el, cls) {
   const row = el.closest('.toggle-row');
   row.querySelectorAll('.toggle-opt').forEach(b => b.className = 'toggle-opt');
   el.classList.add(cls);
   SES.dados[id] = val;
+  if (TOGGLES_REATIVOS.has(id)) {
+    const secId = SECS[SES.secAtual].id;
+    salvarCampos(secId);
+    const body = document.getElementById('t5-body');
+    body.innerHTML = renderSecao(secId);
+    restaurarCampos(secId);
+  }
 }
 
 function checkList(id, label, items) {
@@ -999,7 +1008,7 @@ function renderIdentificacao(t) {
     ${toggle('necessita_tag','Necessita identificação de TAG/Categoria?')}
     ${campo('obs_ident','Observações sobre identificação','textarea',{placeholder:'Placa ilegível, tag ausente…'})}`;
   const fotosSecao = getFotosSecao('ident', t);
-  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d, 'ident')).join('');
 }
 
 // ── SEÇÃO B: PROJETO ──
@@ -1029,7 +1038,7 @@ function renderProjeto(t) {
     </div>
     ${toggle('ja_inspecionado','Já foi inspecionado anteriormente?')}`;
   const fotosSecao = getFotosSecao('projeto', t);
-  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d, 'projeto')).join('');
 }
 
 // ── SEÇÃO C: DIMENSÕES ──
@@ -1073,7 +1082,7 @@ function renderDimensoes(t) {
     ${campo('revestimento','Revestimento / Pintura','select',{options:['Epóxi interno','Borracha (borrachamento)','Sem revestimento','Deteriorado','Outro']})}`;
   if (!html) html = '<div class="info-box">Nenhuma dimensão específica para este tipo.</div>';
   const fotosSecao = getFotosSecao('dimensoes', t);
-  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d, 'dimensoes')).join('');
 }
 
 // ── SEÇÃO D: DISPOSITIVOS DE SEGURANÇA ──
@@ -1099,7 +1108,7 @@ function renderDispositivos(t) {
     ${t==='caldeira' ? toggle('possui_indicador_nivel','Possui indicador de nível?',['Sim','Não']) : ''}
     ${t==='caldeira' ? toggle('possui_pressostato','Possui pressostato de segurança?',['Sim','Não']) : ''}`;
   const fotosSecao = getFotosSecao('disp', t);
-  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d, 'disp')).join('');
 }
 
 // ── SEÇÃO E: DOCUMENTAÇÃO ──
@@ -1129,7 +1138,7 @@ function renderDocumentacaoInteligente(t) {
     if (!SES.dados.documentos_ausentes) SES.dados.documentos_ausentes = docs;
   }
   const fotosSecao = getFotosSecao('docs', t);
-  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d, 'docs')).join('');
 }
 const renderDocumentacao = renderDocumentacaoInteligente;
 
@@ -1145,7 +1154,7 @@ function renderServico(t) {
     ${campo('processo','Informações do Processo (para inspeção)','textarea',{placeholder:'Temperatura, pressão de operação atual, ciclos de operação, histórico de falhas…'})}
     ${campo('risco_observado','Riscos Observados','textarea',{placeholder:'Corrosão externa, vazamentos, deformações…'})}`;
   const fotosSecao = getFotosSecao('servico', t);
-  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d)).join('');
+  return html + '<p class="sec-label">📷 Fotos desta Seção</p>' + fotosSecao.map(d => renderFotoBlock(d, 'servico')).join('');
 }
 
 function renderEnquadramento(t) {
@@ -1213,7 +1222,7 @@ function getFotosDefs(t) {
   return [...comuns, ...(extras[t] || [])];
 }
 
-function renderFotoBlock(def) {
+function renderFotoBlock(def, secaoId) {
   const key = def.key;
   const labelKey = key + '_label';
   const currentLabel = SES.fotos[labelKey] || def.defaultLabel;
@@ -1231,7 +1240,7 @@ function renderFotoBlock(def) {
       <div style="padding:0 14px 12px">
         ${foto && foto.dataUrl
           ? `<img src="${foto.dataUrl}" class="photo-thumb" style="margin-bottom:6px"><span class="photo-clear" onclick="clearFoto('${key}')">✕ Remover foto</span>`
-          : `<div style="display:flex;gap:8px"><button type="button" class="btn btn-ghost btn-sm" onclick="preparePhoto('${key}','obs','${key}','camera')">📷 Câmera</button><button type="button" class="btn btn-ghost btn-sm" onclick="preparePhoto('${key}','obs','${key}','galeria')">🖼️ Galeria</button></div>`
+          : `<div style="display:flex;gap:8px"><button type="button" class="btn btn-ghost btn-sm" onclick="preparePhoto('${key}','${secaoId}','${key}','camera')">📷 Câmera</button><button type="button" class="btn btn-ghost btn-sm" onclick="preparePhoto('${key}','${secaoId}','${key}','galeria')">🖼️ Galeria</button></div>`
         }
       </div>
     </div>`;
@@ -1245,7 +1254,7 @@ function renderObs(t) {
     ${campo('obs_desenho_tub','Observações sobre o desenho','textarea',{placeholder:'Localização do desenho, revisão atual, pendências…'})}` : '';
 
   const defs = getFotosDefs(t);
-  const fotosHtml = defs.map(d => renderFotoBlock(d)).join('');
+  const fotosHtml = defs.map(d => renderFotoBlock(d, 'obs')).join('');
 
   return `
     ${campo('obs_gerais','Observações Gerais','textarea',{placeholder:'Condição geral, anomalias, recomendações…'})}
@@ -1260,39 +1269,32 @@ function renderObs(t) {
 // FOTO
 // ═══════════════════════════════════════════════════════════════
 let _photoTarget = null;
-
 function preparePhoto(key, secao, campo_ref, origem) {
-  _photoTarget = key;
+  _photoTarget = { key, secao, campo_ref, origem };
   const fi = document.getElementById(origem === 'camera' ? 'fileInputCamera' : 'fileInputGallery');
   fi.value = '';
-  fi.onchange = null;
-  fi.onchange = function() {
-    const file = fi.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const img = new Image();
-      img.onload = function() {
-        const MAX = FOTO_MAX_SIZE;
-        let w = img.width, h = img.height;
-        if (w > MAX) { h = h * MAX / w; w = MAX; }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', FOTO_JPEG_QUALITY);
-        SES.fotos[_photoTarget] = { dataUrl, w, h, secao, campo_ref, origem, created_at: new Date().toISOString(), key: _photoTarget };
-        markDirty();
-        // Re-renderiza seção atual para mostrar thumb
-        const body = document.getElementById('t5-body');
-        body.innerHTML = renderSecao(SECS[SES.secAtual].id);
-        restaurarCampos(SECS[SES.secAtual].id);
-      };
-      img.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
+  fi.onchange = handlePhotoSelected;
+  fi.click();
 }
-
+function handlePhotoSelected(event) {
+  const fi = event.target;
+  const file = fi.files && fi.files[0];
+  if (!file || !_photoTarget) return;
+  const target = _photoTarget;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = new Image();
+    img.onload = function(){
+      const MAX=800; let w=img.width,h=img.height; const mx=Math.max(w,h); if(mx>MAX){ const r=MAX/mx; w=Math.round(w*r); h=Math.round(h*r);} 
+      const c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl=c.toDataURL('image/jpeg',0.82);
+      const key=target.key;
+      SES.fotos[key]={ key, label:(SES.fotos[key+'_label']||key), secao:target.secao, campo_ref:target.campo_ref, dataUrl, w, h, origem:target.origem, created_at:new Date().toISOString(), id_equipamento_colect: SES.dados.id_equipamento_colect||'' };
+      markDirty();
+      const secId=SECS[SES.secAtual].id; const body=document.getElementById('t5-body'); body.innerHTML=renderSecao(secId); restaurarCampos(secId);
+    }; img.src=e.target.result;
+  }; reader.readAsDataURL(file);
+}
 function clearFoto(campo) {
   markDirty();
   delete SES.fotos[campo];
@@ -1908,6 +1910,13 @@ function exportarCSV() {
 // ═══════════════════════════════════════════════════════════════
 // ENVIAR AO GAS
 // ═══════════════════════════════════════════════════════════════
+function normalizarFotosParaEnvio(eq){ const src=eq._fotos||{}; const out=[]; Object.entries(src).forEach(([k,v])=>{ if(k.endsWith("_label")||!v||!v.dataUrl) return; const fotoKey=v.key||k; out.push({...v,key:fotoKey,label:src[fotoKey+"_label"]||v.label||fotoKey}); }); return out; }
+
+function normalizarFotosPDF(eq){ return normalizarFotosParaEnvio(eq).reduce((acc,f)=>{ (acc[f.secao||"obs"] ||= []).push(f); return acc; },{});}
+
+const LEGENDAS_TECNICAS_PDF = {};
+const GRUPOS_FOTO_PDF = {};
+
 async function enviarGAS() {
   if (!SES.equipamentos.length) { showToast('Nenhum equipamento','err'); return; }
   if (DEMO_MODE) { showToast('Modo demo — GAS não configurado','warn'); return; }
@@ -1991,3 +2000,4 @@ window.addEventListener('load', () => {
 </script>
 </body>
 </html>
+\nfunction getCodigoProjetoSelect(t){ return []; }\n// diametro_externo_calculado_mm\n// Payload muito grande
